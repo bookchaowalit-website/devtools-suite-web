@@ -1,0 +1,69 @@
+.t-regex { --charcoal: #20272b; --charcoal-soft: #354046; --paper: #f4efe4; --ink: #192125; --red: #c94238; --blue: #3c6687; --line: #b9ad9b; --quiet: #66716f; }
+.t-regex, .t-regex * { box-sizing: border-box; }
+.t-regex { background: var(--charcoal); }
+.t-regex { margin: 0; background: var(--charcoal); color: var(--ink); font-family: var(--font-geist-sans), Arial, sans-serif; }
+.t-regex button, .t-regex input, .t-regex textarea { font: inherit; }
+.t-regex button { cursor: pointer; }
+.t-regex button:focus-visible, .t-regex input:focus-visible, .t-regex textarea:focus-visible { outline: 2px solid var(--red); outline-offset: 3px; }
+.t-regex ::selection { background: var(--red); color: var(--paper); }
+.t-regex .press-shell { min-height: 100vh; padding: 26px; background: radial-gradient(circle at 20% 10%, rgba(244, 239, 228, 0.08), transparent 30%), var(--charcoal); }
+.t-regex .press-sheet { width: min(1200px, 100%); margin: 0 auto; background: var(--paper); box-shadow: 0 24px 60px rgba(0, 0, 0, 0.3); }
+.t-regex .press-masthead, .t-regex .press-footer { display: flex; align-items: center; justify-content: space-between; gap: 20px; padding: 15px 24px; border-bottom: 1px solid var(--line); color: var(--quiet); font-family: var(--font-geist-mono), monospace; font-size: 10px; letter-spacing: 0.14em; text-transform: uppercase; }
+.t-regex .press-footer { border-top: 1px solid var(--line); border-bottom: 0; }
+.t-regex .press-brand, .t-regex .press-meta, .t-regex .press-section-line, .t-regex .press-proof-header, .t-regex .press-match-header { display: flex; align-items: center; justify-content: space-between; gap: 16px; }
+.t-regex .press-brand { color: var(--charcoal); font-weight: 700; }
+.t-regex .press-brand-mark { display: grid; place-items: center; width: 32px; height: 26px; border: 1px solid var(--red); color: var(--red); font-family: Georgia, serif; font-size: 11px; transform: rotate(-4deg); }
+.t-regex .press-meta { color: var(--red); }
+.t-regex .press-hero { display: grid; grid-template-columns: minmax(0, 1fr) 170px; align-items: end; gap: 30px; padding: clamp(50px, 8vw, 96px) clamp(24px, 8vw, 96px) 72px; border-bottom: 1px solid var(--line); background: repeating-linear-gradient(0deg, transparent 0 7px, rgba(32, 39, 43, 0.025) 7px 8px), var(--paper); }
+.t-regex .press-hero h1 { max-width: 780px; margin: 0; color: var(--ink); font-family: Georgia, serif; font-size: clamp(3.2rem, 7.5vw, 7.3rem); font-weight: 400; letter-spacing: -0.06em; line-height: 0.87; }
+.t-regex .press-hero h1 em { color: var(--red); font-style: italic; }
+.t-regex .press-hero p { max-width: 56ch; margin: 30px 0 0; color: var(--charcoal-soft); font-size: 15px; line-height: 1.7; }
+.t-regex .press-proof-count { display: grid; justify-items: end; gap: 8px; color: var(--red); text-align: right; }
+.t-regex .press-proof-count strong { font-family: Georgia, serif; font-size: 82px; font-weight: 400; line-height: 0.8; }
+.t-regex .press-proof-count span { font-family: var(--font-geist-mono), monospace; font-size: 10px; letter-spacing: 0.12em; text-transform: uppercase; }
+.t-regex .press-workbench { display: grid; grid-template-columns: minmax(280px, 0.8fr) minmax(0, 1.2fr); }
+.t-regex .press-compose, .t-regex .press-proof { padding: 32px clamp(22px, 5vw, 58px); }
+.t-regex .press-compose { border-right: 1px solid var(--line); }
+.t-regex .press-section-line { margin-bottom: 24px; color: var(--quiet); font-family: var(--font-geist-mono), monospace; font-size: 10px; letter-spacing: 0.11em; text-transform: uppercase; }
+.t-regex .press-section-index { color: var(--red); font-weight: 700; }
+.t-regex .press-compose h2, .t-regex .press-proof h2 { margin: 0 0 26px; color: var(--ink); font-family: Georgia, serif; font-size: 30px; font-weight: 400; }
+.t-regex .press-field { display: grid; gap: 8px; margin-bottom: 21px; }
+.t-regex .press-field-label { color: var(--charcoal-soft); font-family: var(--font-geist-mono), monospace; font-size: 10px; letter-spacing: 0.12em; text-transform: uppercase; }
+.t-regex .press-field-hint { color: var(--quiet); font-family: var(--font-geist-mono), monospace; font-size: 10px; }
+.t-regex .press-pattern-row { display: grid; grid-template-columns: 20px minmax(0, 1fr) 20px; align-items: center; border-bottom: 2px solid var(--ink); }
+.t-regex .press-slash { color: var(--red); font-family: Georgia, serif; font-size: 26px; text-align: center; }
+.t-regex .press-input { min-width: 0; width: 100%; border: 1px solid var(--line); border-radius: 0; background: rgba(255, 255, 255, 0.32); color: var(--ink); }
+.t-regex .press-pattern-input { padding: 11px 5px; border: 0; background: transparent; font-family: var(--font-geist-mono), monospace; font-size: 16px; }
+.t-regex .press-textarea { min-height: 150px; padding: 12px; resize: vertical; font-family: var(--font-geist-mono), monospace; font-size: 12px; line-height: 1.6; }
+.t-regex .press-flags { display: grid; gap: 8px; margin: 0 0 21px; }
+.t-regex .press-flag-list { display: flex; flex-wrap: wrap; gap: 6px; }
+.t-regex .press-flag { min-width: 36px; padding: 8px 10px; border: 1px solid var(--line); background: transparent; color: var(--charcoal-soft); font-family: var(--font-geist-mono), monospace; font-size: 12px; }
+.t-regex .press-flag:hover, .t-regex .press-flag.is-active { border-color: var(--red); background: var(--red); color: var(--paper); }
+.t-regex .press-copy { padding: 10px 13px; border: 1px solid var(--blue); background: transparent; color: var(--blue); font-family: var(--font-geist-mono), monospace; font-size: 10px; letter-spacing: 0.08em; text-transform: uppercase; }
+.t-regex .press-copy:hover { background: var(--blue); color: var(--paper); }
+.t-regex .press-error { padding: 12px; border: 1px solid var(--red); color: var(--red); font-family: var(--font-geist-mono), monospace; font-size: 11px; line-height: 1.5; }
+.t-regex .press-proof { background: rgba(255, 255, 255, 0.22); }
+.t-regex .press-proof-paper { padding: 20px; border: 1px solid var(--line); background: var(--paper); box-shadow: 0 8px 18px rgba(48, 39, 28, 0.09); }
+.t-regex .press-proof-header, .t-regex .press-match-header { color: var(--quiet); font-family: var(--font-geist-mono), monospace; font-size: 9px; letter-spacing: 0.1em; text-transform: uppercase; }
+.t-regex .press-highlighted { min-height: 90px; margin: 20px 0 0; color: var(--ink); font-family: var(--font-geist-mono), monospace; font-size: 14px; line-height: 1.8; white-space: pre-wrap; overflow-wrap: anywhere; }
+.t-regex .proof-mark { padding: 2px 3px; background: rgba(201, 66, 56, 0.25); color: var(--red); }
+.t-regex .press-match-list { margin-top: 32px; }
+.t-regex .press-match-header { padding-bottom: 11px; border-bottom: 1px solid var(--line); color: var(--red); }
+.t-regex .press-match-list ol { margin: 0; padding: 0; list-style: none; }
+.t-regex .press-match-list li { display: grid; grid-template-columns: 32px minmax(0, 1fr) auto; align-items: baseline; gap: 10px; padding: 13px 0; border-bottom: 1px solid var(--line); font-family: var(--font-geist-mono), monospace; }
+.t-regex .press-match-list li > span { color: var(--red); font-size: 10px; }
+.t-regex .press-match-list li strong { min-width: 0; overflow-wrap: anywhere; font-size: 12px; font-weight: 500; }
+.t-regex .press-match-list li small { color: var(--quiet); font-size: 10px; }
+.t-regex .press-empty { color: var(--quiet); font-family: var(--font-geist-mono), monospace; font-size: 12px; }
+@media (max-width: 760px) {
+  .t-regex .press-shell { padding: 0; }
+  .t-regex .press-masthead, .t-regex .press-footer { align-items: flex-start; flex-direction: column; gap: 9px; }
+  .t-regex .press-hero { grid-template-columns: 1fr; padding: 54px 22px 48px; }
+  .t-regex .press-hero h1 { font-size: clamp(3.1rem, 14vw, 5.8rem); }
+  .t-regex .press-proof-count { justify-items: start; text-align: left; }
+  .t-regex .press-proof-count strong { font-size: 62px; }
+  .t-regex .press-workbench { grid-template-columns: 1fr; }
+  .t-regex .press-compose { border-right: 0; border-bottom: 1px solid var(--line); }
+  .t-regex .press-match-list li { grid-template-columns: 28px minmax(0, 1fr); }
+  .t-regex .press-match-list li small { grid-column: 2; }
+}

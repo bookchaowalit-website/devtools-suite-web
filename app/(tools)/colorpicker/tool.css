@@ -1,0 +1,49 @@
+.t-colorpicker { color-scheme: light; }
+.t-colorpicker, .t-colorpicker * { box-sizing: border-box; }
+.t-colorpicker, .t-colorpicker { margin: 0; min-height: 100%; background: #f3f0e8; color: #1b1c1a; }
+.t-colorpicker { font-family: 'DM Sans', sans-serif; }
+.t-colorpicker button, .t-colorpicker input { font: inherit; }
+.t-colorpicker button, .t-colorpicker a { -webkit-tap-highlight-color: transparent; }
+.t-colorpicker a { color: inherit; text-decoration: none; }
+.t-colorpicker ::selection { background: #1b1c1a; color: #f3f0e8; }
+.t-colorpicker :focus-visible { outline: 2px solid #1b1c1a; outline-offset: 4px; }
+.t-colorpicker .picker-shell { width: min(1240px, calc(100% - 64px)); margin: 0 auto; min-height: 100vh; }
+.t-colorpicker .picker-nav { display: flex; align-items: center; justify-content: space-between; min-height: 76px; border-bottom: 1px solid #c9c4b9; color: #74736d; font: 10px 'DM Mono', monospace; letter-spacing: .08em; }
+.t-colorpicker .picker-brand { display: flex; align-items: center; gap: 9px; color: #1b1c1a; font-weight: 500; }
+.t-colorpicker .picker-nav span { display: flex; align-items: center; gap: 12px; }
+.t-colorpicker .picker-nav i { width: 5px; height: 5px; background: #8a45d4; border-radius: 50%; }
+.t-colorpicker .picker-hero { display: grid; grid-template-columns: minmax(0, 1fr) 320px; gap: 50px; padding: 92px 0 72px; }
+.t-colorpicker .picker-kicker, .t-colorpicker .picker-stage-top, .t-colorpicker .picker-stage-bottom span, .t-colorpicker .picker-readout-head, .t-colorpicker .picker-hex-field span, .t-colorpicker .picker-rgb-fields span, .t-colorpicker .picker-output > span, .t-colorpicker .picker-footer { font: 10px 'DM Mono', monospace; letter-spacing: .1em; }
+.t-colorpicker .picker-kicker { margin: 0 0 24px; color: #8a45d4; }
+.t-colorpicker .picker-hero h1 { margin: 0; font-size: clamp(3.4rem, 8vw, 8rem); font-weight: 500; letter-spacing: -.095em; line-height: .87; }
+.t-colorpicker .picker-hero h1 em { color: #8a45d4; font-style: normal; }
+.t-colorpicker .picker-hero > p:last-child { align-self: end; max-width: 280px; margin: 0; color: #6b6a64; font-size: 17px; line-height: 1.5; }
+.t-colorpicker .picker-lab { display: grid; grid-template-columns: minmax(0, 1.05fr) minmax(380px, .95fr); min-height: 520px; border-top: 1px solid #1b1c1a; border-bottom: 1px solid #1b1c1a; }
+.t-colorpicker .picker-stage { position: relative; min-height: 520px; display: flex; flex-direction: column; justify-content: space-between; padding: 24px; color: #fff; isolation: isolate; transition: background-color .2s ease; }
+.t-colorpicker .picker-stage::after { content: ''; position: absolute; inset: 0; z-index: -1; opacity: .18; background-image: linear-gradient(45deg, #fff 25%, transparent 25%), linear-gradient(-45deg, #fff 25%, transparent 25%), linear-gradient(45deg, transparent 75%, #fff 75%), linear-gradient(-45deg, transparent 75%, #fff 75%); background-size: 32px 32px; background-position: 0 0, 0 16px, 16px -16px, -16px 0; mix-blend-mode: soft-light; }
+.t-colorpicker .picker-stage-top, .t-colorpicker .picker-stage-bottom { display: flex; align-items: center; justify-content: space-between; gap: 20px; text-shadow: 0 1px 6px rgba(0,0,0,.32); }
+.t-colorpicker .picker-stage-bottom strong { font: 500 clamp(1.7rem, 4vw, 3.6rem) 'DM Mono', monospace; letter-spacing: -.08em; }
+.t-colorpicker .picker-native-input { display: flex; align-items: center; gap: 8px; cursor: pointer; font: 10px 'DM Mono', monospace; }
+.t-colorpicker .picker-native-input input { position: absolute; opacity: 0; pointer-events: none; }
+.t-colorpicker .picker-native-input:hover { text-decoration: underline; text-underline-offset: 4px; }
+.t-colorpicker .picker-readout { padding: 24px 28px 28px; background: #f8f6ef; }
+.t-colorpicker .picker-readout-head { display: flex; justify-content: space-between; padding-bottom: 19px; border-bottom: 1px solid #d0ccc2; color: #797770; }
+.t-colorpicker .picker-hex-field, .t-colorpicker .picker-rgb-fields label { display: block; }
+.t-colorpicker .picker-hex-field { margin-top: 28px; }
+.t-colorpicker .picker-hex-field span, .t-colorpicker .picker-rgb-fields span { display: block; margin-bottom: 7px; color: #77756e; }
+.t-colorpicker .picker-hex-field input, .t-colorpicker .picker-rgb-fields input { width: 100%; border: 1px solid #c9c4b9; border-radius: 0; outline: 0; background: transparent; color: #1b1c1a; font: 500 18px 'DM Mono', monospace; }
+.t-colorpicker .picker-hex-field input { padding: 13px 14px; }
+.t-colorpicker .picker-hex-field input:focus, .t-colorpicker .picker-rgb-fields input:focus { border-color: #1b1c1a; }
+.t-colorpicker .picker-rgb-fields { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin-top: 20px; }
+.t-colorpicker .picker-rgb-fields input { padding: 10px; }
+.t-colorpicker .picker-output-list { margin-top: 32px; border-top: 1px solid #d0ccc2; }
+.t-colorpicker .picker-output { display: grid; grid-template-columns: 42px minmax(0, 1fr) auto; align-items: center; gap: 14px; min-height: 55px; border-bottom: 1px solid #d0ccc2; }
+.t-colorpicker .picker-output > span { color: #77756e; }
+.t-colorpicker .picker-output code { color: #1b1c1a; font: 14px 'DM Mono', monospace; }
+.t-colorpicker .picker-output button { display: flex; align-items: center; gap: 6px; border: 0; padding: 7px 0; background: transparent; color: #8a45d4; font: 10px 'DM Mono', monospace; }
+.t-colorpicker .picker-output button:hover { color: #512681; }
+.t-colorpicker .picker-note { margin: 20px 0 0; color: #77756e; font: 11px/1.6 'DM Mono', monospace; }
+.t-colorpicker .picker-footer { display: flex; justify-content: space-between; padding: 24px 0; color: #87857e; }
+@media (max-width: 800px) { .t-colorpicker .picker-shell { width: min(100% - 32px, 1240px); } .t-colorpicker .picker-hero { display: block; padding: 68px 0 54px; } .t-colorpicker .picker-hero > p:last-child { margin-top: 28px; } .t-colorpicker .picker-lab { display: block; } .t-colorpicker .picker-stage { min-height: 390px; } }
+@media (max-width: 520px) { .t-colorpicker .picker-nav span { max-width: 135px; text-align: right; line-height: 1.5; } .t-colorpicker .picker-hero h1 { font-size: clamp(3.1rem, 15vw, 5rem); } .t-colorpicker .picker-readout { padding: 22px 16px 24px; } .t-colorpicker .picker-output { grid-template-columns: 36px minmax(0, 1fr); gap: 8px; padding: 9px 0; } .t-colorpicker .picker-output button { grid-column: 2; justify-self: start; } .t-colorpicker .picker-footer { display: block; line-height: 1.8; } .t-colorpicker .picker-footer span:last-child { display: block; margin-top: 5px; } }
+@media (prefers-reduced-motion: reduce) { .t-colorpicker .picker-stage { transition: none; } }

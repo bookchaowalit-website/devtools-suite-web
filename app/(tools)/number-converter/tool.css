@@ -1,0 +1,54 @@
+.t-number-converter { --bone: #eee9dc; --paper: #f8f5ec; --ink: #202b35; --blue: #47719a; --red: #cb5747; --yellow: #e1c358; --line: #bdb6a8; --muted: #6c7578; }
+.t-number-converter, .t-number-converter * { box-sizing: border-box; }
+.t-number-converter { background: var(--bone); }
+.t-number-converter { margin: 0; background: var(--bone); color: var(--ink); font-family: var(--font-geist-sans), "Trebuchet MS", sans-serif; }
+.t-number-converter button, .t-number-converter input { font: inherit; }
+.t-number-converter button { cursor: pointer; }
+.t-number-converter button:focus-visible, .t-number-converter input:focus-visible { outline: 2px solid var(--red); outline-offset: 3px; }
+.t-number-converter .sr-only { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0,0,0,0); white-space: nowrap; }
+
+.t-number-converter .radix-shell { min-height: 100vh; padding: 18px; }
+.t-number-converter .radix-frame { max-width: 1240px; margin: 0 auto; }
+.t-number-converter .radix-topbar { display: flex; justify-content: space-between; align-items: center; min-height: 46px; border-bottom: 1px solid var(--ink); color: var(--muted); font: 10px var(--font-geist-mono), monospace; letter-spacing: .13em; }
+.t-number-converter .radix-mark { color: var(--ink); text-decoration: none; font-weight: 700; }
+.t-number-converter .radix-mark span { color: var(--red); }
+.t-number-converter .radix-topbar span:last-child { color: var(--blue); }
+.t-number-converter .radix-intro { display: flex; justify-content: space-between; align-items: end; padding: 78px 0 68px; }
+.t-number-converter .radix-intro h1 { margin: 0; font-size: clamp(48px, 7vw, 96px); font-weight: 500; letter-spacing: -.08em; line-height: .9; }
+.t-number-converter .radix-intro h1 em { color: var(--blue); font-family: Georgia, serif; font-style: italic; font-weight: 400; letter-spacing: -.09em; }
+.t-number-converter .radix-intro p { max-width: 430px; margin: 28px 0 0; color: var(--muted); font-size: 15px; line-height: 1.55; }
+.t-number-converter .radix-signal { display: grid; grid-template-columns: repeat(2, 1fr); gap: 5px; width: 132px; height: 132px; padding: 12px; transform: rotate(5deg); border: 1px solid var(--blue); color: var(--blue); font: 13px var(--font-geist-mono), monospace; }
+.t-number-converter .radix-signal span, .t-number-converter .radix-signal b { display: grid; place-items: center; border: 1px solid var(--line); font-weight: 400; }
+.t-number-converter .radix-signal b { background: var(--yellow); color: var(--ink); font-weight: 700; }
+
+.t-number-converter .converter-board { border: 1px solid var(--ink); background: var(--paper); }
+.t-number-converter .board-head, .t-number-converter .board-foot { display: flex; justify-content: space-between; gap: 20px; padding: 17px 20px; color: var(--muted); font: 10px var(--font-geist-mono), monospace; letter-spacing: .1em; }
+.t-number-converter .board-head { border-bottom: 1px solid var(--ink); }
+.t-number-converter .board-head span:first-child, .t-number-converter .board-foot span:first-child { color: var(--ink); }
+.t-number-converter .board-head span:last-child { color: var(--red); }
+.t-number-converter .registers { display: grid; grid-template-columns: repeat(2, 1fr); gap: 1px; background: var(--line); }
+.t-number-converter .register { display: grid; min-height: 220px; grid-template-rows: auto 1fr auto; padding: 20px; background: var(--paper); }
+.t-number-converter .register-label { display: flex; justify-content: space-between; align-items: center; color: var(--muted); font: 11px var(--font-geist-mono), monospace; letter-spacing: .08em; text-transform: uppercase; }
+.t-number-converter .register-prefix { display: grid; place-items: center; width: 37px; height: 27px; border: 1px solid currentColor; color: var(--red); }
+.t-number-converter .register-oct .register-prefix { color: var(--blue); }
+.t-number-converter .register-dec .register-prefix { color: var(--ink); background: var(--yellow); }
+.t-number-converter .register-hex .register-prefix { color: var(--blue); }
+.t-number-converter .register input { width: 100%; align-self: center; padding: 16px 0; border: 0; border-bottom: 2px solid var(--ink); outline: 0; background: transparent; color: var(--ink); font: 500 clamp(34px, 5vw, 70px)/1 var(--font-geist-mono), monospace; letter-spacing: -.08em; }
+.t-number-converter .register input:focus { border-color: var(--red); }
+.t-number-converter .register-foot { display: flex; justify-content: space-between; gap: 15px; color: var(--muted); font: 10px var(--font-geist-mono), monospace; }
+.t-number-converter .register-foot button { border: 0; background: transparent; color: var(--red); font: 10px var(--font-geist-mono), monospace; }
+.t-number-converter .radix-error { margin: 0; padding: 14px 20px; border-top: 1px solid var(--red); color: var(--red); font: 11px var(--font-geist-mono), monospace; }
+.t-number-converter .board-foot { border-top: 1px solid var(--ink); }
+.t-number-converter .radix-footer { display: flex; justify-content: space-between; padding: 20px 0; color: var(--muted); font: 10px var(--font-geist-mono), monospace; letter-spacing: .1em; }
+
+@media (max-width: 780px) {
+  .t-number-converter .radix-shell { padding: 12px; }
+  .t-number-converter .radix-topbar span:nth-child(2) { display: none; }
+  .t-number-converter .radix-intro { padding: 58px 0 45px; }
+  .t-number-converter .radix-intro p { max-width: 290px; }
+  .t-number-converter .radix-signal { width: 92px; height: 92px; padding: 8px; font-size: 10px; }
+  .t-number-converter .registers { grid-template-columns: 1fr; }
+  .t-number-converter .register { min-height: 180px; }
+  .t-number-converter .board-head, .t-number-converter .board-foot { flex-direction: column; gap: 8px; }
+  .t-number-converter .radix-footer { flex-direction: column; gap: 10px; }
+}
