@@ -23,7 +23,7 @@ test("search is case insensitive and sorts pins before most recent items", () =>
   assert.deepEqual(searchSnippets(items, "missing"), []);
   assert.deepEqual(items.map(item => item.id), ["old", "new", "pin"]);
 });
-test("stored JSON round trips through the localStorage boundary", () => {
+test("stored JSON serialization round trips through the codec", () => {
   const items = togglePin(addSnippet([old], "สวัสดี 🚀", "new", 2), "new");
   const storage = new Map<string, string>();
   storage.set("items", serializeSnippets(items));

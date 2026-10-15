@@ -2,7 +2,8 @@
 
 import { useEffect, useMemo, useRef, useState } from "react";
 
-import { addSnippet, togglePin, deleteSnippet, searchSnippets, serializeSnippets, deserializeSnippets, type Snippet } from "@/lib/clipboard-manager/store";
+import { addSnippet, togglePin, deleteSnippet, searchSnippets, type Snippet } from "@/lib/clipboard-manager/store";
+import { readSnippets, writeSnippets } from "@/lib/clipboard-manager/storage";
 const KEY = "devtools-suite:clipboard-manager:items-v2";
 
 async function copyText(text: string) {
@@ -20,13 +21,13 @@ export default function Home() {
   useEffect(() => {
     const timer = window.setTimeout(() => {
       try {
-        setItems(deserializeSnippets(localStorage.getItem(KEY)));
+        setItems(readSnippets(localStorage, KEY));
       } catch { try { localStorage.removeItem(KEY); } catch { /* storage unavailable */ } }
       hydrated.current = true;
     }, 0);
     return () => window.clearTimeout(timer);
   }, []);
-  useEffect(() => { if (hydrated.current) { try { localStorage.setItem(KEY, serializeSnippets(items)); } catch { /* storage unavailable or full */ } } }, [items]);
+  useEffect(() => { if (hydrated.current) { try { writeSnippets(localStorage, KEY, items); } catch { /* storage unavailable */ } } }, [items]);
 
   const filtered = useMemo(() => searchSnippets(items, query), [items, query]);
   const pinned = items.filter((item) => item.pinned).length;
