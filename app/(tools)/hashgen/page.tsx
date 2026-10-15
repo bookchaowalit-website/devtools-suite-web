@@ -1,10 +1,8 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { algorithms, makeDigest, type Algorithm } from "@/lib/hashgen/digest";
 
-const algorithms = ["SHA-1", "SHA-256", "SHA-384", "SHA-512"] as const;
-type Algorithm = (typeof algorithms)[number];
-async function makeDigest(algorithm: Algorithm, value: string) { const bytes = await crypto.subtle.digest(algorithm, new TextEncoder().encode(value)); return Array.from(new Uint8Array(bytes)).map((byte) => byte.toString(16).padStart(2, "0")).join(""); }
 
 export default function Home() {
   const [input, setInput] = useState("hello world");
