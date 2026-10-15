@@ -1,14 +1,8 @@
 "use client";
 
 import { useMemo, useState } from "react";
+import { CALENDAR_TIME_ZONE, toInputValue, displayDate, dateDifference, shiftDate } from "@/lib/date-calculator/arithmetic";
 
-const CALENDAR_TIME_ZONE = "Asia/Bangkok";
-const toInputValue = (date: Date) => {
-  const parts = new Intl.DateTimeFormat("en-US", { timeZone: CALENDAR_TIME_ZONE, year: "numeric", month: "2-digit", day: "2-digit" }).formatToParts(date);
-  const get = (type: string) => parts.find((part) => part.type === type)?.value ?? "01";
-  return `${get("year")}-${get("month")}-${get("day")}`;
-};
-const displayDate = (value: string) => new Intl.DateTimeFormat("en-US", { timeZone: CALENDAR_TIME_ZONE, day: "2-digit", month: "short", year: "numeric" }).format(new Date(`${value}T00:00:00Z`));
 
 export default function Home() {
   const today = useMemo(() => new Date(), []);
@@ -17,8 +11,8 @@ export default function Home() {
   const [base, setBase] = useState(toInputValue(today));
   const [amount, setAmount] = useState(14);
   const [unit, setUnit] = useState<"days" | "weeks" | "months">("days");
-  const diff = useMemo(() => { const days = Math.round((new Date(`${end}T00:00:00`).getTime() - new Date(`${start}T00:00:00`).getTime()) / 86400000); return { days, weeks: (days / 7).toFixed(2), months: (days / 30.44).toFixed(2) }; }, [start, end]);
-  const shifted = useMemo(() => { const date = new Date(`${base}T00:00:00Z`); if (unit === "days") date.setUTCDate(date.getUTCDate() + amount); else if (unit === "weeks") date.setUTCDate(date.getUTCDate() + amount * 7); else date.setUTCMonth(date.getUTCMonth() + amount); return toInputValue(date); }, [base, amount, unit]);
+  const diff = useMemo(() => dateDifference(start, end), [start, end]);
+  const shifted = useMemo(() => shiftDate(base, amount, unit), [base, amount, unit]);
   const direction = diff.days >= 0 ? "forward" : "backward";
   const todayParts = new Intl.DateTimeFormat("en-US", { timeZone: CALENDAR_TIME_ZONE, day: "2-digit", month: "short" }).formatToParts(today);
   const todayDay = todayParts.find((part) => part.type === "day")?.value ?? "01";
