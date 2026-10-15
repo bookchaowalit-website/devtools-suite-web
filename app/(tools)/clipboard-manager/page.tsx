@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useRef, useState } from "react";
 
-type Snippet = { id: string; text: string; createdAt: number; pinned: boolean };
+import { addSnippet, togglePin, deleteSnippet, searchSnippets, serializeSnippets, deserializeSnippets, type Snippet } from "@/lib/clipboard-manager/store";
 const KEY = "devtools-suite:clipboard-manager:items-v2";
 
 async function copyText(text: string) {
@@ -20,21 +20,20 @@ export default function Home() {
   useEffect(() => {
     const timer = window.setTimeout(() => {
       try {
-        const stored = JSON.parse(localStorage.getItem(KEY) || "null");
-        if (Array.isArray(stored)) setItems(stored.filter((item) => item && typeof item.text === "string"));
+        setItems(deserializeSnippets(localStorage.getItem(KEY)));
       } catch { try { localStorage.removeItem(KEY); } catch { /* storage unavailable */ } }
       hydrated.current = true;
     }, 0);
     return () => window.clearTimeout(timer);
   }, []);
-  useEffect(() => { if (hydrated.current) { try { localStorage.setItem(KEY, JSON.stringify(items)); } catch { /* storage unavailable or full */ } } }, [items]);
+  useEffect(() => { if (hydrated.current) { try { localStorage.setItem(KEY, serializeSnippets(items)); } catch { /* storage unavailable or full */ } } }, [items]);
 
-  const filtered = useMemo(() => items.filter((item) => item.text.toLowerCase().includes(query.toLowerCase())).sort((a, b) => Number(b.pinned) - Number(a.pinned) || b.createdAt - a.createdAt), [items, query]);
+  const filtered = useMemo(() => searchSnippets(items, query), [items, query]);
   const pinned = items.filter((item) => item.pinned).length;
 
   const save = () => {
     if (!draft.trim()) { setStatus("HOLD / WRITE A SNIPPET FIRST"); return; }
-    setItems((current) => [{ id: crypto.randomUUID(), text: draft.trim(), createdAt: Date.now(), pinned: false }, ...current]);
+    setItems((current) => addSnippet(current, draft, crypto.randomUUID(), Date.now()));
     setDraft(""); setStatus("FILED / SNIPPET IN ARCHIVE");
   };
 
@@ -77,7 +76,7 @@ export default function Home() {
             {filtered.length === 0 ? <p className="archive-empty">No filed snippets match this search.</p> : <ul>{filtered.map((item, index) => <li key={item.id} className={item.pinned ? "snippet is-pinned" : "snippet"}>
               <div className="snippet-meta"><span>{String(index + 1).padStart(2, "0")}</span><time dateTime={new Date(item.createdAt).toISOString()}>{new Date(item.createdAt).toLocaleDateString()}</time>{item.pinned ? <b>PINNED</b> : null}</div>
               <pre>{item.text}</pre>
-              <div className="snippet-actions"><button type="button" onClick={() => void copy(item)}>{copied === item.id ? "Copied" : "Copy"}</button><button type="button" onClick={() => setItems((current) => current.map((entry) => entry.id === item.id ? { ...entry, pinned: !entry.pinned } : entry))}>{item.pinned ? "Unpin" : "Pin"}</button><button type="button" onClick={() => setItems((current) => current.filter((entry) => entry.id !== item.id))}>Delete</button></div>
+              <div className="snippet-actions"><button type="button" onClick={() => void copy(item)}>{copied === item.id ? "Copied" : "Copy"}</button><button type="button" onClick={() => setItems((current) => togglePin(current, item.id))}>{item.pinned ? "Unpin" : "Pin"}</button><button type="button" onClick={() => setItems((current) => deleteSnippet(current, item.id))}>Delete</button></div>
             </li>)}</ul>}
           </div>
         </section>
