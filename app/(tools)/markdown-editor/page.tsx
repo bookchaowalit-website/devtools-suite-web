@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { useMemo, useState } from "react";
+import { renderMarkdown } from "@/lib/markdown-editor/render";
 
 const SAMPLE = `# Markdown Editor
 
@@ -19,35 +20,6 @@ console.log("hello");
 \`\`\`
 `;
 
-function escapeHtml(value: string) {
-  return value.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
-}
-
-function renderMarkdown(source: string) {
-  const escaped = escapeHtml(source);
-  let inCode = false;
-  let listOpen = false;
-  const output: string[] = [];
-  const closeList = () => { if (listOpen) { output.push("</ul>"); listOpen = false; } };
-  const inline = (line: string) => line
-    .replace(/`([^`]+)`/g, "<code>$1</code>")
-    .replace(/\*\*([^*]+)\*\*/g, "<strong>$1</strong>")
-    .replace(/\*([^*]+)\*/g, "<em>$1</em>")
-    .replace(/\[([^\]]+)\]\(([^)]+)\)/g, '<a href="$2" rel="noreferrer">$1</a>');
-  for (const line of escaped.split("\n")) {
-    if (line.startsWith("```")) { if (inCode) { output.push("</code></pre>"); inCode = false; } else { closeList(); output.push("<pre><code>"); inCode = true; } continue; }
-    if (inCode) { output.push(line + "\n"); continue; }
-    if (/^### /.test(line)) { closeList(); output.push(`<h3>${inline(line.slice(4))}</h3>`); }
-    else if (/^## /.test(line)) { closeList(); output.push(`<h2>${inline(line.slice(3))}</h2>`); }
-    else if (/^# /.test(line)) { closeList(); output.push(`<h1>${inline(line.slice(2))}</h1>`); }
-    else if (/^&gt; /.test(line)) { closeList(); output.push(`<blockquote>${inline(line.replace(/^&gt; /, ""))}</blockquote>`); }
-    else if (/^- /.test(line)) { if (!listOpen) { output.push("<ul>"); listOpen = true; } output.push(`<li>${inline(line.slice(2))}</li>`); }
-    else if (!line.trim()) { closeList(); output.push("<br />"); }
-    else { closeList(); output.push(`<p>${inline(line)}</p>`); }
-  }
-  closeList(); if (inCode) output.push("</code></pre>");
-  return output.join("");
-}
 
 export default function Home() {
   const [source, setSource] = useState(SAMPLE);
