@@ -6,8 +6,20 @@ export function jsonToYaml(value: unknown): string {
   return dump(value, { schema: JSON_SCHEMA, indent: 2, lineWidth: -1, noRefs: true }).trimEnd();
 }
 
+function assertFiniteNumbers(value: unknown, seen = new WeakSet<object>()): void {
+  if (typeof value === "number" && !Number.isFinite(value)) {
+    throw new Error("YAML contains a non-finite number that JSON cannot represent.");
+  }
+  if (value !== null && typeof value === "object" && !seen.has(value)) {
+    seen.add(value);
+    for (const item of Object.values(value)) assertFiniteNumbers(item, seen);
+  }
+}
+
 export function yamlToJson(text: string): unknown {
-  return load(text, { schema: JSON_SCHEMA });
+  const value = load(text, { schema: JSON_SCHEMA });
+  assertFiniteNumbers(value);
+  return value;
 }
 
 export function transformDocument(input: string, mode: ConversionMode): string {

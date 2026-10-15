@@ -25,3 +25,17 @@ test("invalid JSON and YAML produce errors instead of silently changing data", (
   assert.throws(() => transformDocument('items: [unfinished', "YAML → JSON"));
   assert.throws(() => transformDocument('key: one\nkey: two', "YAML → JSON"));
 });
+
+test("rejects non-finite YAML numbers at every depth instead of turning them into null", () => {
+  for (const scalar of [".nan", ".NaN", ".inf", ".Inf", "-.inf", "+.inf"]) {
+    for (const input of [scalar, `score: ${scalar}`, `items:\n  - ${scalar}`, `items:\n  - nested:\n      score: ${scalar}`]) {
+      assert.throws(() => transformDocument(input, "YAML → JSON"), /non-finite|finite number/i, input);
+    }
+  }
+});
+
+test("keeps JSON-compatible YAML scalars and quoted non-finite text intact", () => {
+  assert.deepEqual(JSON.parse(transformDocument('score: 1.25\nzero: 0\nnegative: -2\nflag: false\nempty: null\ntext: ".nan"\nitems: [".inf", 3]\nlargeText: 1e999', "YAML → JSON")), {
+    score: 1.25, zero: 0, negative: -2, flag: false, empty: null, text: ".nan", items: [".inf", 3], largeText: "1e999",
+  });
+});
