@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 
-type Palette = { name: string; note: string; colors: string[] };
+import { cssTokens, tailwindTokens, jsonTokens, type Palette } from "@/lib/color-palettes/export";
 const PRESETS: Palette[] = [
   { name: "Sunset", note: "heat / late light", colors: ["#FF6B6B", "#FFA06B", "#FFD93D", "#6BCB77", "#4D96FF"] },
   { name: "Ocean", note: "depth / open water", colors: ["#023E8A", "#0077B6", "#0096C7", "#48CAE4", "#90E0EF"] },
@@ -13,9 +13,6 @@ const PRESETS: Palette[] = [
 ];
 
 async function copyText(text: string) { try { await navigator.clipboard.writeText(text); return true; } catch { return false; } }
-const cssTokens = (palette: Palette) => `:root {\n${palette.colors.map((color, index) => `  --color-${index + 1}: ${color};`).join("\n")}\n}`;
-const tailwindTokens = (palette: Palette) => `colors: {\n${palette.colors.map((color, index) => `  ${palette.name.toLowerCase()}-${index + 1}: "${color}",`).join("\n")}\n}`;
-const jsonTokens = (palette: Palette) => JSON.stringify({ name: palette.name, colors: palette.colors }, null, 2);
 
 export default function Home() {
   const [selected, setSelected] = useState(PRESETS[0]);
