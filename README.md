@@ -32,6 +32,13 @@ roadmaps, design, tools, language-forge) are not part of this phase.
 | Clipboard Manager | `clipboard-manager.bookchaowalit.com` | `/clipboard-manager` | Local-only clipboard history snippets stored in localStorage. |
 | Snippets | `snippets.bookchaowalit.com` | `/snippets` | A small local code specimen library: filter, read and copy reusable snippets. |
 
+The Snippets catalog also has a JSON-RPC MCP endpoint at `POST /api/snippets/mcp`
+(`initialize`, `tools/list`, `tools/call` with `get_all`, `get_by_id` and
+`search`). It reuses `lib/snippets/catalog.ts`, the same `SNIPPETS` source and
+`filterSnippets` function as the `/snippets` page. It replaces the archived
+`devtools-snippets-web` stub at `/api/mcp`, which never returned snippet data;
+the old subdomain redirect does not preserve that path.
+
 `lib/redirects.ts` exports the host -> path mapping (`SUBDOMAIN_REDIRECTS`,
 `redirectForHost`) for later Vercel redirects. No domain is configured here.
 
