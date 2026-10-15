@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { parseInteger } from "@/lib/number-converter/conversion";
 
 type Base = "bin" | "oct" | "dec" | "hex";
 const RADIX: Record<Base, number> = { bin: 2, oct: 8, dec: 10, hex: 16 };
@@ -16,22 +17,6 @@ async function copyText(text: string) {
   try { await navigator.clipboard.writeText(text); return true; } catch { return false; }
 }
 
-function parseInteger(raw: string, radix: number) {
-  let value = raw.trim();
-  let negative = false;
-  if (value.startsWith("-")) { negative = true; value = value.slice(1); }
-  if (radix === 16) value = value.replace(/^0x/i, "");
-  const patterns: Record<number, RegExp> = { 2: /^[01]+$/, 8: /^[0-7]+$/, 10: /^\d+$/, 16: /^[0-9a-f]+$/i };
-  if (!value || !patterns[radix].test(value)) throw new Error("Use only the digits allowed by this base.");
-  let number = BigInt(0);
-  const digits = "0123456789abcdefghijklmnopqrstuvwxyz";
-  for (const character of value.toLowerCase()) {
-    const digit = BigInt(digits.indexOf(character));
-    if (digit < 0 || digit >= BigInt(radix)) throw new Error("This digit is outside the selected base.");
-    number = number * BigInt(radix) + digit;
-  }
-  return negative ? -number : number;
-}
 
 export default function Home() {
   const [values, setValues] = useState<Record<Base, string>>({ bin: "1010", oct: "12", dec: "10", hex: "a" });
