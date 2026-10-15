@@ -1,23 +1,15 @@
 "use client";
 
 import { useMemo, useState } from "react";
+import { SNIPPETS, filterSnippets } from "@/lib/snippets/catalog";
 
-type Snippet = { id: string; title: string; code: string; language: string; category: string; tags: string[] };
-const SNIPPETS: Snippet[] = [
-  { id: "1", title: "React Hook", code: "const useHook = () => {\n  return { ready: true };\n};", language: "javascript", category: "React", tags: ["react", "hook"] },
-  { id: "2", title: "Python Decorator", code: "def traced(fn):\n    def wrapper(*args):\n        return fn(*args)\n    return wrapper", language: "python", category: "Python", tags: ["python", "decorator"] },
-  { id: "3", title: "Typed Result", code: "type Result<T> =\n  | { ok: true; value: T }\n  | { ok: false; error: Error };", language: "typescript", category: "TypeScript", tags: ["types", "result"] },
-];
 
 export default function Home() {
   const [query, setQuery] = useState("");
   const [category, setCategory] = useState("All");
   const [selectedId, setSelectedId] = useState(SNIPPETS[0].id);
   const [copied, setCopied] = useState(false);
-  const visible = useMemo(() => SNIPPETS.filter((snippet) => {
-    const text = `${snippet.title} ${snippet.language} ${snippet.category} ${snippet.tags.join(" ")}`.toLowerCase();
-    return (category === "All" || snippet.category === category) && text.includes(query.toLowerCase());
-  }), [category, query]);
+  const visible = useMemo(() => filterSnippets(SNIPPETS, query, category), [category, query]);
   const selected = SNIPPETS.find((snippet) => snippet.id === selectedId) || visible[0] || SNIPPETS[0];
 
   async function copyCode() {
