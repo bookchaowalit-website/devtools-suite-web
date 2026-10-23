@@ -57,12 +57,17 @@ npm ci
 npm run dev        # http://localhost:3000
 npm run lint
 npm run typecheck
-npm test           # node --experimental-strip-types --test tests/*.test.ts
+npm test           # Vitest: every tool's lib, the 17 page renders, snippets MCP route, site, Sentry
 npm run build
 ```
 
 Set `NEXT_PUBLIC_SITE_URL` to the canonical origin for sitemap, robots and
-metadata (default `https://devtools.bookchaowalit.com`).
+metadata (default `https://devtools.bookchaowalit.com`). `NEXT_PUBLIC_SENTRY_DSN`
+turns on error reporting (errors only, personal data stripped; off when unset).
+
+CI (`.github/workflows/ci.yml`) runs the shared Node workflow (lint, typecheck,
+Vitest with a line-coverage gate, build) and the shared security scan on every
+push and PR to `main`. What each route really does: see `PRODUCT.md`.
 
 ## License
 
