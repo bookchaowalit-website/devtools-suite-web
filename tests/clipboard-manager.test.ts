@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
-import { test } from "node:test";
-import { addSnippet, togglePin, deleteSnippet, searchSnippets, serializeSnippets, deserializeSnippets, type Snippet } from "../lib/clipboard-manager/store.ts";
+import { test } from "vitest";
+import { addSnippet, togglePin, deleteSnippet, searchSnippets, serializeSnippets, deserializeSnippets, type Snippet } from "@/lib/clipboard-manager/store";
 const old: Snippet = { id: "old", text: "old text", createdAt: 1, pinned: false };
 test("add trims text, prepends records, and ignores blank drafts", () => {
   const items = [old];

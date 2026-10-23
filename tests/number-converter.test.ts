@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
-import { test } from "node:test";
-import { parseInteger } from "../lib/number-converter/conversion.ts";
+import { test } from "vitest";
+import { parseInteger } from "@/lib/number-converter/conversion";
 
 test("parses all four supported bases and optional hexadecimal prefixes", () => {
   for (const [raw, radix] of [["1010", 2], ["12", 8], ["10", 10], ["a", 16], ["0xA", 16]] as const) assert.equal(parseInteger(raw, radix), BigInt(10));

@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
-import { test } from "node:test";
-import { SNIPPETS, filterSnippets } from "../lib/snippets/catalog.ts";
-import { handleMcpRequest, TOOLS } from "../lib/snippets/mcp.ts";
+import { test } from "vitest";
+import { SNIPPETS, filterSnippets } from "@/lib/snippets/catalog";
+import { handleMcpRequest, TOOLS } from "@/lib/snippets/mcp";
 
 const call = (name: string, args: Record<string, unknown>, id: number | string = 7) =>
   handleMcpRequest({ jsonrpc: "2.0", id, method: "tools/call", params: { name, arguments: args } });

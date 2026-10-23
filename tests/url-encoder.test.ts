@@ -1,6 +1,6 @@
-import { describe, it } from "node:test";
+import { describe, it } from "vitest";
 import { expect } from "./support/expect.ts";
-import { convert, inspectQuery, inverse, MODES } from "../lib/url-encoder/codec.ts";
+import { convert, inspectQuery, inverse, MODES } from "@/lib/url-encoder/codec";
 
 describe("convert", () => {
   it("encodes components and full URIs differently", () => {

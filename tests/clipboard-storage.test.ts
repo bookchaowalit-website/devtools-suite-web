@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
-import { test } from "node:test";
-import { readSnippets, writeSnippets } from "../lib/clipboard-manager/storage.ts";
-import { addSnippet, togglePin, type Snippet } from "../lib/clipboard-manager/store.ts";
+import { test } from "vitest";
+import { readSnippets, writeSnippets } from "@/lib/clipboard-manager/storage";
+import { addSnippet, togglePin, type Snippet } from "@/lib/clipboard-manager/store";
 
 function storageStub() {
   const values: Record<string, string> = Object.create(null);

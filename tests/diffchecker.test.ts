@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
-import { test } from "node:test";
-import { lineDiff } from "../lib/diffchecker/diff.ts";
+import { test } from "vitest";
+import { lineDiff } from "@/lib/diffchecker/diff";
 
 test("identical and empty texts retain their shared lines", () => {
   assert.deepEqual(lineDiff("a\nb", "a\nb"), [

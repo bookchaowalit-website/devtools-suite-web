@@ -1,8 +1,8 @@
 import assert from "node:assert/strict";
 import { existsSync } from "node:fs";
-import { describe, it } from "node:test";
-import { redirectForHost, SUBDOMAIN_REDIRECTS } from "../lib/redirects.ts";
-import { TOOLS, toolPath } from "../lib/tools.ts";
+import { describe, it } from "vitest";
+import { redirectForHost, SUBDOMAIN_REDIRECTS } from "@/lib/redirects";
+import { TOOLS, toolPath } from "@/lib/tools";
 
 describe("tool registry", () => {
   it("has unique slugs and a route directory for each tool", () => {

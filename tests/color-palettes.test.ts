@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
-import { test } from "node:test";
-import { cssTokens, tailwindTokens, jsonTokens } from "../lib/color-palettes/export.ts";
+import { test } from "vitest";
+import { cssTokens, tailwindTokens, jsonTokens } from "@/lib/color-palettes/export";
 const palette = { name: "Ocean", note: "study", colors: ["#023E8A", "#90E0EF"] };
 test("exports numbered CSS custom properties in palette order", () => {
   assert.equal(cssTokens(palette), ":root {\n  --color-1: #023E8A;\n  --color-2: #90E0EF;\n}");

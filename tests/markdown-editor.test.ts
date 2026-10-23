@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
-import { test } from "node:test";
-import { escapeHtml, renderMarkdown } from "../lib/markdown-editor/render.ts";
+import { test } from "vitest";
+import { escapeHtml, renderMarkdown } from "@/lib/markdown-editor/render";
 
 test("renders each supported block and inline construct", () => {
   assert.equal(renderMarkdown("# One\n## Two\n### Three"), "<h1>One</h1><h2>Two</h2><h3>Three</h3>");

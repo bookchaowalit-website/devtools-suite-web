@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
-import { describe, it } from "node:test";
-import { Base64Error, decodeBase64, encodeBase64, normalizeBase64, plural, textStats } from "../lib/base64/base64.ts";
+import { describe, it } from "vitest";
+import { Base64Error, decodeBase64, encodeBase64, normalizeBase64, plural, textStats } from "@/lib/base64/base64";
 
 describe("encodeBase64", () => {
   it("encodes ASCII and multi-byte UTF-8 text", () => {

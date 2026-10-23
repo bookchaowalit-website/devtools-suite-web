@@ -1,7 +1,7 @@
-import { test } from "node:test";
+import { test } from "vitest";
 import assert from "node:assert/strict";
-import { SUBDOMAIN_REDIRECTS, redirectForHost } from "../lib/redirects.ts";
-import { TOOLS } from "../lib/tools.ts";
+import { SUBDOMAIN_REDIRECTS, redirectForHost } from "@/lib/redirects";
+import { TOOLS } from "@/lib/tools";
 
 test("every ported tool has exactly one former subdomain", () => {
   const paths = Object.values(SUBDOMAIN_REDIRECTS).sort();

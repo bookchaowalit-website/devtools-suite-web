@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
-import { test } from "node:test";
-import { dateDifference, shiftDate, toInputValue, displayDate } from "../lib/date-calculator/arithmetic.ts";
+import { test } from "vitest";
+import { dateDifference, shiftDate, toInputValue, displayDate } from "@/lib/date-calculator/arithmetic";
 test("date differences include leap days and retain backward direction", () => {
   assert.deepEqual(dateDifference("2024-02-28", "2024-03-01"), { days: 2, weeks: "0.29", months: "0.07" });
   assert.equal(dateDifference("2024-03-01", "2024-02-28").days, -2);

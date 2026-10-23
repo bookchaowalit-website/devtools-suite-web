@@ -1,6 +1,6 @@
-import { describe, it } from "node:test";
+import { describe, it } from "vitest";
 import { expect } from "./support/expect.ts";
-import { addRun, MAX_RUNS, normalizeTarget, summarize, type Run } from "../lib/latency-test/latency.ts";
+import { addRun, MAX_RUNS, normalizeTarget, summarize, type Run } from "@/lib/latency-test/latency";
 
 const origin = "https://latency.test";
 

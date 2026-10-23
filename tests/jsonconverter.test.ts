@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
-import { test } from "node:test";
-import { transformDocument, jsonToYaml, yamlToJson } from "../lib/jsonconverter/conversion.ts";
+import { test } from "vitest";
+import { transformDocument, jsonToYaml, yamlToJson } from "@/lib/jsonconverter/conversion";
 
 test("formats and minifies valid JSON without changing its values", () => {
   const source = '{ "name": "book", "active": true, "count": 2 }';

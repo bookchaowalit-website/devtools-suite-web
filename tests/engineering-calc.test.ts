@@ -1,6 +1,6 @@
-import { describe, it } from "node:test";
+import { describe, it } from "vitest";
 import { expect } from "./support/expect.ts";
-import { convertLoad, formulaFor, fromKn, KGF_PER_KN, loadBounds, loadUnit, momentUnit, roundForUnit, solve, toKn, validate } from "../lib/engineering-calc/beam.ts";
+import { convertLoad, formulaFor, fromKn, KGF_PER_KN, loadBounds, loadUnit, momentUnit, roundForUnit, solve, toKn, validate } from "@/lib/engineering-calc/beam";
 
 describe("solve", () => {
   it("uses wL²/8 and wL/2 for distributed loads", () => {

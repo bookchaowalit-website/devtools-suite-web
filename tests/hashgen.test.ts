@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
-import { test } from "node:test";
+import { test } from "vitest";
 import { createHash } from "node:crypto";
-import { algorithms, makeDigest } from "../lib/hashgen/digest.ts";
+import { algorithms, makeDigest } from "@/lib/hashgen/digest";
 
 const vectors = {
   "SHA-1": "a9993e364706816aba3e25717850c26c9cd0d89d",

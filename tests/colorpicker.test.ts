@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
-import { test } from "node:test";
-import { clamp, hexToRgb, rgbToHex, rgbToHsl, hslToRgb, hslToHex } from "../lib/colorpicker/conversion.ts";
+import { test } from "vitest";
+import { clamp, hexToRgb, rgbToHex, rgbToHsl, hslToRgb, hslToHex } from "@/lib/colorpicker/conversion";
 test("HEX to RGB round trips normalize shorthand and case", () => {
   for (const [hex, expected] of [["#F00", "#ff0000"], ["0aB", "#00aabb"], ["#123456", "#123456"], ["000000", "#000000"], ["#FFFFFF", "#ffffff"]]) {
     const rgb = hexToRgb(hex)!;
