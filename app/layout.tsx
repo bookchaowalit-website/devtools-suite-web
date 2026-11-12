@@ -11,6 +11,13 @@ export const metadata: Metadata = {
   description: "Seventeen developer tools in one place. Everything runs in your browser; nothing you type is uploaded.",
   authors: [{ name: "Bookchaowalit", url: "https://bookchaowalit.com" }],
   robots: { index: true, follow: true },
+  openGraph: {
+    type: "website",
+    siteName: SUITE_NAME,
+    title: `${SUITE_NAME} - browser developer tools`,
+    description: "Seventeen developer tools in one place. Everything runs in your browser; nothing you type is uploaded.",
+    url: "/",
+  },
 };
 
 export const viewport: Viewport = { width: "device-width", initialScale: 1, colorScheme: "light dark" };
@@ -27,6 +34,13 @@ export default function RootLayout({ children }: Readonly<{ children: React.Reac
           </nav>
         </header>
         <div id="main" tabIndex={-1}>{children}</div>
+        <footer className="suite-footer">
+          <nav aria-label="Site">
+            <a href="https://bookchaowalit.com/privacy">Privacy</a>
+            <a href="https://monitor.bookchaowalit.com/">Status</a>
+            <a href="mailto:bookchaowalit.work@gmail.com">Contact</a>
+          </nav>
+        </footer>
         <Analytics />
         <SpeedInsights />
       </body>
