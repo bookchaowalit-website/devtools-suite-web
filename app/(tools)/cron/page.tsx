@@ -1,6 +1,13 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useMemo, useState, useSyncExternalStore } from "react";
+
+// The next-run list depends on the viewer's clock and time zone: compute it only in the browser so
+// the server HTML never disagrees with it (React hydration error #418).
+const noopSubscribe = () => () => {};
+function useIsClient(): boolean {
+  return useSyncExternalStore(noopSubscribe, () => true, () => false);
+}
 
 function fieldMatches(field: string, value: number, min: number, max: number): boolean {
   if (field === "*") return true;
@@ -42,7 +49,8 @@ export default function Home() {
   const [copied, setCopied] = useState(false);
   const parts = expr.trim().split(/\s+/);
   const valid = parts.length === 5;
-  const runs = useMemo(() => nextRuns(expr), [expr]);
+  const isClient = useIsClient();
+  const runs = useMemo(() => (isClient ? nextRuns(expr) : []), [expr, isClient]);
   const copy = async () => { try { await navigator.clipboard.writeText(expr); setCopied(true); window.setTimeout(() => setCopied(false), 1400); } catch { setCopied(false); } };
 
   return (
@@ -53,7 +61,7 @@ export default function Home() {
 
       <section className="preset-strip" aria-label="Presets"><span className="strip-label">SET A PRESET</span>{presets.map(([label, value]) => <button key={value} onClick={() => setExpr(value)} className={expr === value ? "selected" : ""}>{label}<code>{value}</code></button>)}</section>
 
-      <section className="plate-results"><article className="reading-panel"><p className="plate-kicker">PLAIN-ENGLISH IMPRESSION</p><h2>{describe(expr)}</h2><div className="rule-ornament" aria-hidden="true">×　·　×</div><p className="result-note">The sentence is generated in your browser. This utility supports standard five-field cron and treats the next-run list as an estimate.</p></article><article className="runs-panel"><div className="runs-heading"><p className="plate-kicker">NEXT IMPRESSIONS</p><span>LOCAL TIME</span></div>{runs.length ? <ol>{runs.map((run, index) => <li key={run}><span>{String(index + 1).padStart(2, "0")}</span><time>{run}</time></li>)}</ol> : <p className="no-runs">No matches in the scan window. Check the five marks above.</p>}</article></section>
+      <section className="plate-results"><article className="reading-panel"><p className="plate-kicker">PLAIN-ENGLISH IMPRESSION</p><h2>{describe(expr)}</h2><div className="rule-ornament" aria-hidden="true">×　·　×</div><p className="result-note">The sentence is generated in your browser. This utility supports standard five-field cron and treats the next-run list as an estimate.</p></article><article className="runs-panel"><div className="runs-heading"><p className="plate-kicker">NEXT IMPRESSIONS</p><span>LOCAL TIME</span></div>{!isClient ? <p className="no-runs">Calculating in your local time…</p> : runs.length ? <ol>{runs.map((run, index) => <li key={run}><span>{String(index + 1).padStart(2, "0")}</span><time>{run}</time></li>)}</ol> : <p className="no-runs">No matches in the scan window. Check the five marks above.</p>}</article></section>
       <footer className="plate-footer"><span>CRON EXPRESSION HELPER / 2026</span><span>Client-side · no server required · no data leaves this browser</span></footer>
     </main>
   );
