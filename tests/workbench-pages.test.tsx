@@ -62,3 +62,40 @@ describe("/minifier on the Workbench shell", () => {
     expect(html).not.toMatch(/chamber/i);
   });
 });
+
+import ColorPickerTool from "@/app/(tools)/colorpicker/page";
+import DateCalculatorTool from "@/app/(tools)/date-calculator/page";
+import DiffCheckerTool from "@/app/(tools)/diffchecker/page";
+
+describe("/date-calculator on the Workbench shell", () => {
+  const html = renderToString(<DateCalculatorTool />);
+  it("renders no build-time date on the server (hydration #418) and labels every field", () => {
+    expect(html).toContain('class="wb"');
+    expect(html).not.toMatch(/value="\d{4}-\d{2}-\d{2}"/);
+    expect(html).toContain("Days between");
+    expect(html).toContain("Add or subtract");
+    expect(html).not.toMatch(/calendar slide|ruler/i);
+  });
+});
+
+describe("/colorpicker on the Workbench shell", () => {
+  const html = renderToString(<ColorPickerTool />);
+  it("shows the default color in all three formats with copy buttons", () => {
+    expect(html).toContain('class="wb"');
+    expect(html).toContain("#4F46E5");
+    expect(html).toContain("rgb(79, 70, 229)");
+    expect(html).toMatch(/hsl\(\d+, \d+%, \d+%\)/);
+    expect(html.match(/aria-label="Copy (HEX|RGB|HSL) value"/g)?.length).toBe(3);
+  });
+});
+
+describe("/diffchecker on the Workbench shell", () => {
+  const html = renderToString(<DiffCheckerTool />);
+  it("compares the samples live and says which lines changed in words", () => {
+    expect(html).toContain('class="wb"');
+    expect(html).toMatch(/\+(<!-- -->)?2(<!-- -->)? added/);
+    expect(html).toMatch(/−(<!-- -->)?1(<!-- -->)? removed/);
+    expect(html).toContain("Added: ");
+    expect(html).not.toMatch(/evidence|forensic/i);
+  });
+});

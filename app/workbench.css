@@ -160,3 +160,60 @@
   .wb-field label { grid-column: 1 / -1; }
   .wb-segmented-4 { grid-auto-flow: row; grid-template-columns: 1fr 1fr; }
 }
+
+/* Added with /date-calculator, /colorpicker and /diffchecker (2026-11-13). */
+.wb-cards { display: grid; gap: 16px; }
+.wb-card { padding: clamp(16px, 3vw, 24px); border: 1px solid var(--wb-line); border-radius: var(--wb-radius); background: var(--wb-surface); box-shadow: var(--wb-shadow); }
+.wb-card h2 { margin: 0 0 16px; font-size: 19px; font-weight: 600; letter-spacing: -.01em; }
+.wb-inputs { display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 12px; align-items: end; }
+.wb-input { display: grid; gap: 6px; font-size: 15px; font-weight: 600; }
+.wb-input input, .wb-input select { width: 100%; min-height: 44px; padding: 0 12px; border: 1px solid var(--wb-line); border-radius: var(--wb-radius-sm); background: var(--wb-bg); font-family: var(--wb-font); font-size: 17px; font-weight: 400; }
+.wb-input input:focus-visible, .wb-input select:focus-visible { outline: 3px solid var(--wb-focus); outline-offset: 0; }
+.wb-input input[aria-invalid="true"] { border-color: var(--wb-danger); }
+.wb-figures { display: grid; grid-template-columns: repeat(auto-fit, minmax(120px, 1fr)); gap: 12px; margin: 20px 0 0; }
+.wb-figures div { padding: 14px 16px; border-radius: 14px; background: var(--wb-bg); }
+.wb-figures dt { color: var(--wb-muted); font-size: 14px; }
+.wb-figures dd { margin: 2px 0 0; font-size: clamp(26px, 4vw, 34px); font-weight: 700; letter-spacing: -.02em; font-variant-numeric: tabular-nums; }
+.wb-figures .is-added { color: var(--wb-success); }
+.wb-figures .is-removed { color: var(--wb-danger); }
+.wb-answer { margin: 20px 0 0; padding: 14px 16px; border-radius: 14px; background: var(--wb-bg); font-size: 17px; line-height: 1.5; }
+.wb-answer strong { display: block; font-size: clamp(24px, 4vw, 32px); letter-spacing: -.02em; }
+.wb-note { margin: 12px 0 0; color: var(--wb-muted); font-size: 14px; line-height: 1.5; }
+
+.wb-color { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.2fr); gap: 16px; }
+.wb-swatch { position: relative; display: flex; flex-direction: column; justify-content: flex-end; min-height: 280px; padding: 16px; border: 1px solid var(--wb-line); border-radius: var(--wb-radius); box-shadow: var(--wb-shadow); }
+.wb-swatch-pick { position: absolute; top: 12px; right: 12px; display: inline-flex; align-items: center; gap: 8px; min-height: 44px; padding: 0 16px; border-radius: 980px; background: rgb(255 255 255 / 92%); color: #1d1d1f; font-size: 15px; font-weight: 600; cursor: pointer; }
+.wb-swatch-pick input { position: absolute; inset: 0; width: 100%; height: 100%; opacity: 0; cursor: pointer; }
+.wb-swatch-pick:has(input:focus-visible) { outline: 3px solid var(--wb-focus); outline-offset: 2px; }
+.wb-swatch-value { align-self: flex-start; padding: 6px 12px; border-radius: 10px; background: rgb(255 255 255 / 92%); color: #1d1d1f; font-family: var(--wb-mono); font-size: 17px; font-weight: 600; }
+.wb-field code { overflow-wrap: anywhere; font-family: var(--wb-mono); font-size: 17px; }
+
+.wb-diff { margin-top: 16px; border: 1px solid var(--wb-line); border-radius: var(--wb-radius); background: var(--wb-surface); box-shadow: var(--wb-shadow); overflow: hidden; }
+.wb-diff-head { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 8px 16px; padding: 12px 16px; border-bottom: 1px solid var(--wb-line); }
+.wb-diff-head h2 { margin: 0; font-size: 15px; font-weight: 600; }
+.wb-diff-stats { display: flex; gap: 16px; margin: 0; font-size: 14px; font-variant-numeric: tabular-nums; }
+.wb-diff-stats .is-added { color: var(--wb-success); font-weight: 600; }
+.wb-diff-stats .is-removed { color: var(--wb-danger); font-weight: 600; }
+.wb-diff-lines { margin: 0; padding: 8px 0; overflow-x: auto; font-family: var(--wb-mono); font-size: 14px; line-height: 1.7; }
+.wb-diff-line { display: grid; grid-template-columns: 3.5ch 3.5ch 2ch minmax(0, 1fr); gap: 8px; padding: 0 16px; }
+.wb-diff-line .no { color: var(--wb-muted); text-align: right; user-select: none; }
+.wb-diff-line .mark { font-weight: 700; user-select: none; }
+.wb-diff-line code { white-space: pre-wrap; overflow-wrap: anywhere; }
+.wb-diff-line.is-add { background: var(--wb-add-bg); }
+.wb-diff-line.is-add .mark { color: var(--wb-success); }
+.wb-diff-line.is-del { background: var(--wb-del-bg); }
+.wb-diff-line.is-del .mark { color: var(--wb-danger); }
+:root { --wb-add-bg: #edf8ef; --wb-del-bg: #fdecec; }
+@media (prefers-color-scheme: dark) { :root { --wb-add-bg: #0f2e18; --wb-del-bg: #3a1214; } }
+
+@media (max-width: 720px) {
+  .wb-color { grid-template-columns: 1fr; }
+  .wb-swatch { min-height: 160px; }
+}
+.wb-field-label { font-size: 15px; font-weight: 600; }
+@media (max-width: 720px) { .wb-field .wb-field-label { grid-column: 1 / -1; } }
+.wb-diff-empty { margin: 0; padding: 12px 16px 16px; }
+.wb-inputs-gap { margin-top: 12px; }
+/* A segmented control inside an input grid gets its own row so it never forces horizontal scroll. */
+.wb-inputs > .wb-segmented { grid-column: 1 / -1; justify-self: start; }
+@media (max-width: 720px) { .wb-inputs > .wb-segmented { justify-self: stretch; } }

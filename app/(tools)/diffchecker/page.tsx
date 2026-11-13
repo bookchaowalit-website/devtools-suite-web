@@ -1,28 +1,77 @@
 "use client";
 
 import { useMemo, useState } from "react";
+import { SwapIcon, ToolIntro, Workbench } from "@/components/workbench";
 import { lineDiff } from "@/lib/diffchecker/diff";
 
-
-export default function Home() {
+export default function DiffCheckerTool() {
   const [left, setLeft] = useState("Hello World\nThis is the first text.\nShared line");
   const [right, setRight] = useState("Hello World\nThis is the second text.\nShared line\nExtra");
-  const [status, setStatus] = useState("COMPARISON LIVE / LOCAL TEXT");
+  const [announcement, setAnnouncement] = useState("");
+  // Live comparison: the diff follows both texts as you type.
   const ops = useMemo(() => lineDiff(left, right), [left, right]);
-  const stats = useMemo(() => ({ add: ops.filter((op) => op.type === "add").length, del: ops.filter((op) => op.type === "del").length, equal: ops.filter((op) => op.type === "equal").length }), [ops]);
-  const clear = () => { setLeft(""); setRight(""); setStatus("EVIDENCE CLEARED / READY"); };
-  const swap = () => { setLeft(right); setRight(left); setStatus("COLUMNS SWAPPED / COMPARISON LIVE"); };
+  const added = ops.filter((op) => op.type === "add").length;
+  const removed = ops.filter((op) => op.type === "del").length;
+  const same = ops.length - added - removed;
+
+  const swap = () => { setLeft(right); setRight(left); setAnnouncement("Swapped original and changed text."); };
+  const clear = () => { setLeft(""); setRight(""); setAnnouncement("Cleared both texts."); };
 
   return (
-    <main className="proof-page">
-      <div className="proof-shell">
-        <header className="proof-header"><div className="proof-brand"><span>BOOKCHAOWALIT / TEXT FORENSICS</span><strong>DIFF / DESK</strong></div><p aria-live="polite">{status}</p><span className="proof-mode">LINE LEVEL / NO UPLOAD</span></header>
-        <section className="proof-intro" aria-labelledby="page-title"><h1 id="page-title">Find the changed line.</h1><p>Lay two versions side by side. The evidence stays in this browser while the comparison marks what moved, what stayed, and what arrived.</p></section>
-        <section className="proof-inputs" aria-label="Text evidence"><label><span>01 / ORIGINAL</span><textarea value={left} onChange={(event) => { setLeft(event.target.value); setStatus("EVIDENCE UPDATED / ORIGINAL"); }} aria-label="Original text" spellCheck={false} /></label><div className="proof-divider" aria-hidden="true">VS</div><label><span>02 / MODIFIED</span><textarea value={right} onChange={(event) => { setRight(event.target.value); setStatus("EVIDENCE UPDATED / MODIFIED"); }} aria-label="Modified text" spellCheck={false} /></label></section>
-        <div className="proof-actions"><button type="button" className="proof-primary" onClick={() => setStatus("REPORT READY / READ THE MARKS")}>Run comparison</button><button type="button" onClick={swap}>Swap evidence</button><button type="button" onClick={clear}>Clear desk</button></div>
-        <section className="proof-report" aria-labelledby="report-title"><div className="proof-report-head"><div><span>REPORT / LINE LEDGER</span><h2 id="report-title">Marked evidence</h2></div><dl><div><dt>ADDED</dt><dd className="is-added">+{stats.add}</dd></div><div><dt>REMOVED</dt><dd className="is-removed">−{stats.del}</dd></div><div><dt>SHARED</dt><dd>{stats.equal}</dd></div></dl></div><div className="proof-legend"><span><b className="mark-add">+</b> added to modified</span><span><b className="mark-del">−</b> removed from original</span><span><b> </b> unchanged</span></div><div className="proof-lines">{ops.map((op, index) => <div key={`${op.type}-${index}`} className={`proof-line is-${op.type}`}><span className="line-no">{op.left ?? "·"}</span><span className="line-no">{op.right ?? "·"}</span><span className="line-mark" aria-hidden="true">{op.type === "add" ? "+" : op.type === "del" ? "−" : " "}</span><code>{op.line || " "}</code></div>)}</div></section>
-        <footer className="proof-footer">LCS-STYLE LINE COMPARISON / CHARACTER AND WORD MODES NOT CLAIMED / LOCAL ONLY</footer>
+    <Workbench>
+      <ToolIntro title="Diff Checker" summary="Paste two versions of a text to see which lines were added, removed or kept." />
+
+      <div className="wb-panes">
+        <section className="wb-pane">
+          <div className="wb-pane-head">
+            <label htmlFor="diff-left">Original</label>
+            <button type="button" className="wb-button-plain" onClick={clear} disabled={!left && !right}>Clear both</button>
+          </div>
+          <textarea id="diff-left" value={left} onChange={(event) => setLeft(event.target.value)} placeholder="Paste the original text" spellCheck={false} autoComplete="off" />
+        </section>
+        <section className="wb-pane">
+          <div className="wb-pane-head">
+            <label htmlFor="diff-right">Changed</label>
+            <button type="button" className="wb-button-plain" onClick={swap} disabled={!left && !right} aria-label="Swap: exchange original and changed text">
+              <SwapIcon />Swap
+            </button>
+          </div>
+          <textarea id="diff-right" value={right} onChange={(event) => setRight(event.target.value)} placeholder="Paste the changed text" spellCheck={false} autoComplete="off" />
+        </section>
       </div>
-    </main>
+      <p className="wb-sr" role="status" aria-live="polite">{announcement}</p>
+
+      <section className="wb-diff" aria-labelledby="diff-title">
+        <div className="wb-diff-head">
+          <h2 id="diff-title">Differences</h2>
+          <p className="wb-diff-stats">
+            <span className="is-added">+{added} added</span>
+            <span className="is-removed">−{removed} removed</span>
+            <span>{same} unchanged</span>
+          </p>
+        </div>
+        {ops.length === 0 || (!left && !right) ? (
+          <p className="wb-note wb-diff-empty">Paste text into both boxes to compare them.</p>
+        ) : added === 0 && removed === 0 ? (
+          <p className="wb-note wb-diff-empty">The two texts are identical.</p>
+        ) : (
+          <div className="wb-diff-lines" role="list" aria-label="Line by line comparison">
+            {ops.map((op, index) => (
+              <div key={`${op.type}-${index}`} role="listitem" className={`wb-diff-line is-${op.type}`}>
+                <span className="no" aria-hidden="true">{op.left ?? ""}</span>
+                <span className="no" aria-hidden="true">{op.right ?? ""}</span>
+                <span className="mark" aria-hidden="true">{op.type === "add" ? "+" : op.type === "del" ? "−" : ""}</span>
+                <code>
+                  {op.type !== "equal" ? <span className="wb-sr">{op.type === "add" ? "Added: " : "Removed: "}</span> : null}
+                  {op.line || " "}
+                </code>
+              </div>
+            ))}
+          </div>
+        )}
+      </section>
+
+      <p className="wb-hint">Compares whole lines. A changed line shows as one line removed and one added.</p>
+    </Workbench>
   );
 }
