@@ -21,7 +21,7 @@ A developer who needs a quick, private, in-browser utility, and a portfolio visi
 | Route | Does | Does not |
 |---|---|---|
 | `/` | Catalogue of the 17 tools with name, one-line description and route. | — |
-| `/base64` | Encode text to Base64 or decode it back on button click; UTF-8 safe; optional URL-safe output (no padding); decoding accepts standard or URL-safe input and ignores line breaks; character/byte counts; swap and copy. | No file-to-Base64, no real-time conversion, no Web Worker. |
+| `/base64` | Encode text to Base64 or decode it back as you type (live result); UTF-8 safe; optional URL-safe output (no padding); decoding accepts standard or URL-safe input and ignores spaces and line breaks; character/byte counts; swap and copy. First tool on the Workbench shell (`WORKBENCH.md`). | No file-to-Base64, no Web Worker. |
 | `/color-palettes` | Six fixed preset palettes labelled static sample; copy one colour, the whole palette, or CSS variables / Tailwind / JSON tokens. | No contrast or WCAG check, no palette generation, no UI-pattern previews. |
 | `/colorpicker` | Pick a colour and read/copy it as HEX, RGB and HSL (with clamping and round-trip conversion). | No OKLCH, contrast checker, colour-blindness simulation or palette generation. |
 | `/cron` | Edit a standard 5-field cron expression or choose a preset; get a plain-English sentence and an estimated list of the next 5 run times in local time. | No visual builder, full validation, shareable URLs or non-standard fields. |
