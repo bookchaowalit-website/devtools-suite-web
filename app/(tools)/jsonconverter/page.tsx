@@ -1,15 +1,71 @@
 "use client";
 
 import { useState } from "react";
-
+import { AlertIcon, CheckIcon, CopyIcon, Segmented, ToolIntro, useCopy, Workbench } from "@/components/workbench";
 import { transformDocument, type ConversionMode } from "@/lib/jsonconverter/conversion";
 
-async function copyText(value: string) { try { await navigator.clipboard.writeText(value); return true; } catch { return false; } }
+const MODES = [
+  { value: "PRETTY", label: "Format" },
+  { value: "MINIFY", label: "Minify" },
+  { value: "JSON → YAML", label: "To YAML" },
+  { value: "YAML → JSON", label: "To JSON" },
+] as const satisfies readonly { value: ConversionMode; label: string }[];
+const SOURCE: Record<ConversionMode, string> = { PRETTY: "JSON", MINIFY: "JSON", "JSON → YAML": "JSON", "YAML → JSON": "YAML" };
+const RESULT: Record<ConversionMode, string> = { PRETTY: "Formatted JSON", MINIFY: "Minified JSON", "JSON → YAML": "YAML", "YAML → JSON": "JSON" };
 
-export default function Home() {
+function run(mode: ConversionMode, input: string): { output: string; error: string } {
+  if (!input.trim()) return { output: "", error: "" };
+  try {
+    return { output: transformDocument(input, mode), error: "" };
+  } catch (cause) {
+    return { output: "", error: cause instanceof Error ? cause.message : "Could not convert this document." };
+  }
+}
+
+export default function JsonConverterTool() {
   const [input, setInput] = useState('{\n  "project": "book-dev",\n  "active": true,\n  "tools": ["json", "yaml"]\n}');
-  const [output, setOutput] = useState(""); const [mode, setMode] = useState<ConversionMode>("PRETTY"); const [error, setError] = useState(""); const [copied, setCopied] = useState(false);
-  function transform(nextMode: ConversionMode) { setMode(nextMode); setError(""); try { setOutput(transformDocument(input, nextMode)); } catch (cause) { setOutput(""); setError(cause instanceof Error ? cause.message : "Could not transform this document."); } }
-  async function copy() { if (await copyText(output)) { setCopied(true); window.setTimeout(() => setCopied(false), 1600); } }
-  return <main className="pattern-shell"><header className="pattern-header"><div className="pattern-brand"><span>BOOK / UTILITY</span><strong>03—24</strong></div><div><p className="eyebrow">FORMAT STUDIO / CLIENT-SIDE</p><h1>Pull the<br /><em>pattern.</em></h1><p className="lede">A small drafting table for moving structured data between clean shapes.</p></div><div className="header-note"><span>NO API KEY</span><strong>LOCAL</strong><span>nothing leaves this cloth</span></div></header><div className="drafting-grid" aria-hidden="true">{Array.from({ length: 9 }, (_, index) => <span key={index} />)}</div><section className="drafting-table" aria-label="JSON and YAML converter"><div className="table-top"><div><span className="section-label">01 / CHOOSE A TRANSFORMATION</span><h2>Lay out the pieces.</h2></div><span className="format-status">{mode} / READY</span></div><div className="mode-row">{(["PRETTY", "MINIFY", "JSON → YAML", "YAML → JSON"] as const).map((item) => <button type="button" className={mode === item ? "active" : ""} key={item} onClick={() => transform(item)} aria-pressed={mode === item}><span className="cord" />{item}<small>{item === "PRETTY" ? "space the seams" : item === "MINIFY" ? "cut the excess" : item === "JSON → YAML" ? "change the weave" : "read it back"}</small></button>)}</div><div className="pattern-pieces"><div className="piece"><label htmlFor="source"><span>02 / SOURCE PIECE</span><small>{input.length} chars</small></label><textarea id="source" value={input} onChange={(event) => setInput(event.target.value)} spellCheck={false} /><div className="piece-footer"><span>EDITABLE</span><button type="button" onClick={() => setInput("")}>Clear cloth</button></div></div><div className="pull-cord" aria-hidden="true"><span>pull</span><i /></div><div className="piece"><div className="piece-label"><span>03 / FINISHED PIECE</span><small>{output.length} chars</small></div><output className={`result ${error ? "has-error" : ""}`} aria-live="polite">{error ? error : output || <span className="result-placeholder">Choose a cut to see the finished shape.</span>}</output><div className="piece-footer"><span>{error ? "CHECK INPUT" : "READ ONLY"}</span><button type="button" disabled={!output} onClick={() => void copy()}>{copied ? "Copied" : "Copy piece ↗"}</button></div></div></div><div className="table-bottom"><button className="primary-action" type="button" onClick={() => transform(mode)}>Pull {mode.toLowerCase()} <span>→</span></button><p>Simple YAML support for everyday objects and arrays.<br />Everything runs in this tab.</p></div></section><footer className="pattern-footer"><span>JSON CONVERTER / CUTTING TABLE 01</span><span>JSON · YAML · NO SERVER</span></footer></main>;
+  const [mode, setMode] = useState<ConversionMode>("PRETTY");
+  const [announcement, setAnnouncement] = useState("");
+  // Live result: parsing a pasted document is fast enough to run on every keystroke.
+  const { output, error } = run(mode, input);
+  const { copied, copy } = useCopy(output, (ok) => setAnnouncement(ok ? "Result copied to the clipboard." : "Copy was blocked. Select the result and copy it by hand."));
+
+  return (
+    <Workbench>
+      <ToolIntro title="JSON Converter" summary="Format or minify JSON, and convert simple documents between JSON and YAML." />
+
+      <div className="wb-controls">
+        <Segmented label="Conversion" options={MODES} value={mode} onChange={setMode} />
+      </div>
+
+      <div className="wb-panes">
+        <section className="wb-pane" data-invalid={error ? "true" : undefined}>
+          <div className="wb-pane-head">
+            <label htmlFor="json-input">{SOURCE[mode]}</label>
+            <button type="button" className="wb-button-plain" onClick={() => setInput("")} disabled={!input}>Clear</button>
+          </div>
+          <textarea id="json-input" value={input} onChange={(event) => setInput(event.target.value)} placeholder={`Paste ${SOURCE[mode]}`} aria-invalid={error ? true : undefined} aria-describedby={error ? "json-error" : "json-input-meta"} spellCheck={false} autoComplete="off" />
+          {error ? (
+            <p id="json-error" className="wb-error" role="alert"><AlertIcon />{error}</p>
+          ) : (
+            <p id="json-input-meta" className="wb-pane-meta">{input.length.toLocaleString("en")} characters</p>
+          )}
+        </section>
+
+        <section className="wb-pane">
+          <div className="wb-pane-head">
+            <label htmlFor="json-output">{RESULT[mode]}</label>
+            <button type="button" className="wb-button" onClick={() => copy(output)} disabled={!output}>
+              {copied ? <><CheckIcon />Copied</> : <><CopyIcon />Copy</>}
+            </button>
+          </div>
+          <textarea id="json-output" value={output} readOnly placeholder="The result appears here as you type" aria-describedby="json-output-meta" spellCheck={false} />
+          <p id="json-output-meta" className="wb-pane-meta">{output.length.toLocaleString("en")} characters</p>
+        </section>
+      </div>
+      <p className="wb-sr" role="status" aria-live="polite">{announcement}</p>
+
+      <p className="wb-hint">YAML support covers everyday objects, arrays, strings, numbers and booleans (JSON schema).</p>
+    </Workbench>
+  );
 }

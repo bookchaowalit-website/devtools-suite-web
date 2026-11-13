@@ -1,7 +1,4 @@
 import type { Metadata } from "next";
-import "./tool.css";
-
-
 
 export const metadata: Metadata = {
   title: "JSON Converter",
@@ -10,5 +7,5 @@ export const metadata: Metadata = {
 };
 
 export default function ToolLayout({ children }: Readonly<{ children: React.ReactNode }>) {
-  return <div className={`tool-root t-jsonconverter antialiased`}>{children}</div>;
+  return <div className="tool-root t-jsonconverter">{children}</div>;
 }
