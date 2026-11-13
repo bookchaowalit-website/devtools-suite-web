@@ -1,21 +1,120 @@
 "use client";
 
 import { useState } from "react";
-import { convert, inspectQuery, inverse, MODES, type Mode, type QueryResult } from "@/lib/url-encoder/codec";
+import { AlertIcon, CheckIcon, CopyIcon, Segmented, SwapIcon, ToolIntro, useCopy, Workbench } from "@/components/workbench";
+import { convert, inspectQuery, type Mode, type QueryResult } from "@/lib/url-encoder/codec";
 
-async function copyText(value: string) { try { await navigator.clipboard.writeText(value); return true; } catch { return false; } }
+type Direction = "encode" | "decode";
+type Scope = "component" | "uri";
+const DIRECTIONS = [{ value: "encode", label: "Encode" }, { value: "decode", label: "Decode" }] as const;
+const SCOPES = [{ value: "component", label: "Query value" }, { value: "uri", label: "Full URL" }] as const;
+const SCOPE_HINT: Record<Scope, string> = {
+  component: "encodeURIComponent: escapes everything, including / ? & =. Use it for one value inside a URL.",
+  uri: "encodeURI: keeps the URL structure (/ ? & = #) and escapes the rest. Use it for a whole address.",
+};
 
-export default function Home() {
-  const [input, setInput] = useState("hello world?q=café & more"); const [output, setOutput] = useState(""); const [error, setError] = useState(""); const [mode, setMode] = useState<Mode>("component-encode"); const [copied, setCopied] = useState(false); const [plusAsSpace, setPlusAsSpace] = useState(false); const [query, setQuery] = useState<QueryResult | null>(null);
-  const run = () => { const result = convert(mode, input, plusAsSpace); if (result.ok) { setOutput(result.value); setError(""); } else { setOutput(""); setError(result.error); } };
-  const chooseMode = (next: Mode) => { setMode(next); setOutput(""); setError(""); };
-  const swap = () => { if (!output) return; setInput(output); setOutput(""); setError(""); setMode(inverse(mode)); };
-  const handleCopy = async () => { if (output && await copyText(output)) { setCopied(true); window.setTimeout(() => setCopied(false), 1500); } };
+export default function UrlEncoderTool() {
+  const [input, setInput] = useState("hello world?q=café & more");
+  const [direction, setDirection] = useState<Direction>("encode");
+  const [scope, setScope] = useState<Scope>("component");
+  const [plusAsSpace, setPlusAsSpace] = useState(false);
+  const [query, setQuery] = useState<QueryResult | null>(null);
+  const [announcement, setAnnouncement] = useState("");
+  const { copied, copy } = useCopy((ok) => setAnnouncement(ok ? "Result copied to the clipboard." : "Copy was blocked. Select the result and copy it by hand."));
 
-  return <main className="telegram-room">
-    <header className="telegram-bar"><div className="telegram-mark">B/10</div><div className="telegram-name"><strong>CODED MESSAGE DESK</strong><span>CLIENT-SIDE URL UTILITY</span></div><div className="telegram-state"><i /> NO SERVER REQUIRED</div></header>
-    <section className="telegram-hero"><div><p className="telegram-kicker">BOOKCHAOWALIT / MESSAGE SERVICE</p><h1>Send it in<br /><em>the right code.</em></h1><p className="hero-copy">A small telegraph desk for the characters that URLs cannot carry as-is.</p></div><div className="red-stamp"><span>PROCESSED</span><strong>10</strong><b>LOCAL DESK</b></div></section>
-    <section className="message-desk" aria-label="URL encoder and decoder"><div className="mode-strip"><span>CHOOSE THE WIRE</span><div role="group" aria-label="Encoding mode">{MODES.map(({ id, label, scope }) => <button type="button" key={id} aria-pressed={mode === id} className={mode === id ? "active" : ""} onClick={() => chooseMode(id)}><strong>{label}</strong><small>{scope} · {id.endsWith("encode") ? "encode" : "decode"}</small></button>)}</div></div><div className="desk-rule"><span>MESSAGE FORM / {mode}</span><span>UTF-8 TEXT</span></div><div className="message-grid"><label className="message-slip input-slip"><span>Input message</span><textarea aria-label="Input message" value={input} onChange={(event) => { setInput(event.target.value); setCopied(false); setQuery(null); }} spellCheck={false} /></label><div className="wire-column" aria-hidden="true"><i /><b>→</b><i /></div><label className="message-slip output-slip"><span>Output telegram</span><textarea aria-label="Output telegram" value={output} readOnly spellCheck={false} placeholder="Converted text will appear here" /></label></div>{error && <p className="error-line" role="alert"><i />{error}</p>}<div className="desk-actions"><button type="button" className="convert-button" onClick={run}>Convert message <b aria-hidden="true">↗</b></button><button type="button" className="copy-button" disabled={!output} onClick={handleCopy}>{copied ? "Copied" : "Copy output"}</button><button type="button" className="copy-button" disabled={!output} onClick={swap}>Swap &amp; reverse</button><button type="button" className="copy-button" onClick={() => setQuery(inspectQuery(input))}>Inspect query string</button>{mode.endsWith("decode") ? <label className="plus-toggle"><input type="checkbox" checked={plusAsSpace} onChange={(event) => setPlusAsSpace(event.target.checked)} /> Treat + as space (form data)</label> : null}</div><p className="sr-only" role="status">{copied ? "Output copied to the clipboard." : ""}</p>{query && (query.ok ? <table className="query-table"><caption>Query parameters ({query.rows.length}) · decoded, + as space</caption><thead><tr><th scope="col">Key</th><th scope="col">Value</th></tr></thead><tbody>{query.rows.map((row, index) => <tr key={index}><th scope="row">{row.key || <em>(empty)</em>}</th><td>{row.value || <em>(empty)</em>}</td></tr>)}</tbody></table> : <p className="error-line" role="alert"><i />{query.error}</p>)}<p className="desk-note">Component encoding is for individual query values. URI encoding keeps the structure of a full address.</p></section>
-    <footer className="telegram-footer"><span>BOOKCHAOWALIT / URL ENCODER</span><span>BROWSER STATE · NO MESSAGE IS SENT</span></footer>
-  </main>;
+  const mode = `${scope}-${direction}` as Mode;
+  // Live result: the codec is cheap, so it runs on every keystroke.
+  const result = convert(mode, input, plusAsSpace);
+  const output = result.ok ? result.value : "";
+  const error = result.ok ? "" : result.error;
+  const inputLabel = direction === "encode" ? "Text" : "Encoded";
+  const outputLabel = direction === "encode" ? "Encoded" : "Text";
+
+  const swap = () => {
+    if (!output) return;
+    setInput(output);
+    setDirection(direction === "encode" ? "decode" : "encode");
+    setQuery(null);
+    setAnnouncement(`Swapped. Now ${direction === "encode" ? "decoding" : "encoding"}.`);
+  };
+  const edit = (value: string) => { setInput(value); setQuery(null); };
+
+  return (
+    <Workbench>
+      <ToolIntro title="URL Encoder" summary="Percent-encode text so it is safe inside a URL, or decode it back to readable text." />
+
+      <div className="wb-controls">
+        <div className="wb-control-group">
+          <Segmented label="Direction" options={DIRECTIONS} value={direction} onChange={setDirection} />
+          <Segmented label="What you are encoding" options={SCOPES} value={scope} onChange={setScope} />
+        </div>
+        {direction === "decode" ? (
+          <label className="wb-switch">
+            <input type="checkbox" role="switch" checked={plusAsSpace} onChange={(event) => setPlusAsSpace(event.target.checked)} />
+            <span>Treat + as space<small>For HTML form data</small></span>
+          </label>
+        ) : null}
+      </div>
+      <p className="wb-hint wb-hint-top">{SCOPE_HINT[scope]}</p>
+
+      <div className="wb-panes">
+        <section className="wb-pane" data-invalid={error ? "true" : undefined}>
+          <div className="wb-pane-head">
+            <label htmlFor="url-input">{inputLabel}</label>
+            <button type="button" className="wb-button-plain" onClick={() => edit("")} disabled={!input}>Clear</button>
+          </div>
+          <textarea
+            id="url-input"
+            value={input}
+            onChange={(event) => edit(event.target.value)}
+            placeholder={direction === "encode" ? "Type or paste text or a URL" : "Paste encoded text, e.g. caf%C3%A9"}
+            aria-invalid={error ? true : undefined}
+            aria-describedby={error ? "url-error" : undefined}
+            spellCheck={false}
+            autoComplete="off"
+          />
+          {error ? <p id="url-error" className="wb-error" role="alert"><AlertIcon />{error}</p> : null}
+        </section>
+
+        <section className="wb-pane">
+          <div className="wb-pane-head">
+            <label htmlFor="url-output">{outputLabel}</label>
+            <div className="wb-pane-tools">
+              <button type="button" className="wb-button-plain" onClick={swap} disabled={!output} aria-label="Swap: use the result as input">
+                <SwapIcon />Swap
+              </button>
+              <button type="button" className="wb-button" onClick={() => copy(output)} disabled={!output}>
+                {copied ? <><CheckIcon />Copied</> : <><CopyIcon />Copy</>}
+              </button>
+            </div>
+          </div>
+          <textarea id="url-output" value={output} readOnly placeholder="The result appears here as you type" spellCheck={false} />
+        </section>
+      </div>
+      <p className="wb-sr" role="status" aria-live="polite">{announcement}</p>
+
+      <div className="wb-actions">
+        <button type="button" className="wb-button-plain" onClick={() => setQuery(inspectQuery(input))} disabled={!input.trim()}>
+          Show query parameters
+        </button>
+      </div>
+      {query ? (
+        query.ok ? (
+          <div className="wb-table-wrap">
+            <table className="wb-table">
+              <caption>{query.rows.length} query {query.rows.length === 1 ? "parameter" : "parameters"}, decoded (+ read as space)</caption>
+              <thead><tr><th scope="col">Key</th><th scope="col">Value</th></tr></thead>
+              <tbody>
+                {query.rows.map((row, index) => (
+                  <tr key={index}><th scope="row">{row.key || <em>(empty)</em>}</th><td>{row.value || <em>(empty)</em>}</td></tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        ) : (
+          <p className="wb-error wb-error-inline" role="alert"><AlertIcon />{query.error}</p>
+        )
+      ) : null}
+    </Workbench>
+  );
 }

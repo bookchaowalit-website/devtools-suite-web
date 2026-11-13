@@ -1,8 +1,8 @@
 # Workbench shell
 
 The shared look for every single-purpose tool in this suite: calm, minimal, Apple-like. Started
-2026-11-13 with `/base64` as the pilot; the other 16 tools still carry their own themes and move over one
-at a time.
+2026-11-13 with `/base64` as the pilot, then `/url-encoder` and `/hashgen` the same day; the other 14 tools
+still carry their own themes and move over one at a time.
 
 ## Why
 
@@ -26,6 +26,7 @@ made the suite feel like seventeen sites. One shell fixes these once.
 |---|---|
 | Tokens `--wb-*` (light + dark), layout, segmented control, switch, panes, buttons | `app/workbench.css` |
 | `Workbench`, `ToolIntro`, `Segmented`, `useCopy`, icons | `components/workbench.tsx` |
+| Option cards (`.wb-options` radio group), result table (`.wb-table`), read-only digest (`.wb-digest`) | `app/workbench.css` |
 | Suite header (translucent bar) and footer with hub + source links | `app/layout.tsx`, `app/globals.css` |
 
 Page structure:
@@ -47,7 +48,8 @@ Page structure:
 1. Keep `lib/<slug>/` logic and its tests unchanged.
 2. Rewrite `app/(tools)/<slug>/page.tsx` with the pieces above; delete `tool.css` and any `next/font` in the tool layout.
 3. Keep `canonical: "/<slug>"` in the layout; set a plain `title`.
-4. Add a render test like `tests/base64-page.test.tsx`.
+4. Add a render test like `tests/base64-page.test.tsx` or `tests/workbench-pages.test.tsx`.
 5. Screenshot 375 / 768 / 1440 in light and dark before merging.
 
-Next in line (simplest first): url-encoder, hashgen, number-converter, jsonconverter, minifier.
+Done: base64, url-encoder, hashgen. Next in line (simplest first): number-converter, jsonconverter, minifier,
+date-calculator, colorpicker.

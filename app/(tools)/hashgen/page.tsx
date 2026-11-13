@@ -1,28 +1,67 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { CheckIcon, CopyIcon, ToolIntro, useCopy, Workbench } from "@/components/workbench";
 import { algorithms, makeDigest, type Algorithm } from "@/lib/hashgen/digest";
 
+const BITS: Record<Algorithm, number> = { "SHA-1": 160, "SHA-256": 256, "SHA-384": 384, "SHA-512": 512 };
 
-export default function Home() {
+export default function HashTool() {
   const [input, setInput] = useState("hello world");
   const [algorithm, setAlgorithm] = useState<Algorithm>("SHA-256");
-  const [digest, setDigest] = useState("");
-  const [copied, setCopied] = useState(false);
-  const [busy, setBusy] = useState(false);
-  async function generate() { setBusy(true); setCopied(false); setDigest(await makeDigest(algorithm, input)); setBusy(false); }
-  // Deferred so the digest is recomputed outside the effect body.
-  useEffect(() => { const timer = window.setTimeout(() => void generate(), 0); return () => window.clearTimeout(timer); // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [algorithm]);
-  async function copy() { if (!digest) return; try { await navigator.clipboard.writeText(digest); setCopied(true); window.setTimeout(() => setCopied(false), 1600); } catch { setCopied(false); } }
+  // The digest is stored with the input and algorithm it belongs to, so a stale result is never shown.
+  const [result, setResult] = useState<{ key: string; digest: string } | null>(null);
+  const [announcement, setAnnouncement] = useState("");
+  const { copied, copy } = useCopy((ok) => setAnnouncement(ok ? "Hash copied to the clipboard." : "Copy was blocked. Select the hash and copy it by hand."));
 
-  return <main className="lab-shell">
-    <header className="lab-header"><div className="lab-id"><span>SPECIMEN</span><strong>H·26</strong><span>WEB CRYPTO</span></div><div><p className="eyebrow">BOOKCHAOWALIT / DEVELOPER LAB</p><h1>Hash<br /><em>generator</em></h1><p className="lede">A quiet instrument for turning text into a reproducible hexadecimal fingerprint.</p></div><div className="lab-meta"><span>MODE</span><strong>LOCAL</strong><span>input never uploaded</span></div></header>
-    <div className="calibration"><span /><span /><span /><span /><span /><span /><span /><span /></div>
-    <section className="instrument" aria-label="Hash generator instrument"><div className="instrument-top"><div><span className="section-label">01 / SELECT DIGEST</span><h2>Choose a family.</h2></div><span className="readout">{algorithm} · READY</span></div><div className="algorithm-row">{algorithms.map((item) => <button key={item} type="button" className={item === algorithm ? "selected" : ""} onClick={() => setAlgorithm(item)} aria-pressed={item === algorithm}><span className="radio" />{item}<small>{item === "SHA-1" ? "160 bit" : item === "SHA-256" ? "256 bit" : item === "SHA-384" ? "384 bit" : "512 bit"}</small></button>)}</div>
-      <div className="workbench"><div className="input-column"><label htmlFor="hash-input"><span>02 / SOURCE TEXT</span><small>{new TextEncoder().encode(input).length} bytes</small></label><textarea id="hash-input" value={input} onChange={(event) => setInput(event.target.value)} spellCheck={false} /><div className="input-foot"><span>UTF—8</span><button type="button" onClick={() => setInput("")}>Clear source</button></div></div><div className="connector" aria-hidden="true"><span>digest</span><i /></div><div className="output-column"><div className="output-label"><span>03 / HEXADECIMAL OUTPUT</span><small>{digest.length} chars</small></div><output className="digest-output" aria-live="polite">{busy ? <span className="working">CALCULATING<span>···</span></span> : digest || <span className="placeholder">Generate a fingerprint</span>}</output><div className="output-foot"><span>READ ONLY</span><button type="button" onClick={() => void copy()} disabled={!digest}>{copied ? "Copied to clipboard" : "Copy digest ↗"}</button></div></div></div>
-      <div className="action-row"><button className="generate" type="button" onClick={() => void generate()} disabled={busy}>{busy ? "Calculating…" : "Generate digest"}<span>→</span></button><p>Same input + same algorithm = same fingerprint.<br />Computed entirely by your browser.</p></div>
-    </section>
-    <footer className="lab-footer"><span>HASHGEN / CALIBRATION 02</span><span>SHA family · hexadecimal notation</span></footer>
-  </main>;
+  const key = `${algorithm}\u0000${input}`;
+  useEffect(() => {
+    let cancelled = false;
+    makeDigest(algorithm, input).then((digest) => { if (!cancelled) setResult({ key: `${algorithm}\u0000${input}`, digest }); });
+    return () => { cancelled = true; };
+  }, [algorithm, input]);
+  const digest = result?.key === key ? result.digest : "";
+  const bytes = new TextEncoder().encode(input).length;
+
+  return (
+    <Workbench>
+      <ToolIntro title="Hash Generator" summary="Get a SHA fingerprint of any text. The same text and algorithm always give the same hash." />
+
+      <fieldset className="wb-options">
+        <legend>Algorithm</legend>
+        {algorithms.map((item) => (
+          <label key={item} className="wb-option">
+            <input type="radio" name="algorithm" value={item} checked={algorithm === item} onChange={() => setAlgorithm(item)} />
+            <strong>{item}</strong>
+            <span>{BITS[item]}-bit{item === "SHA-1" ? ", legacy only" : ""}</span>
+          </label>
+        ))}
+      </fieldset>
+
+      <div className="wb-panes">
+        <section className="wb-pane">
+          <div className="wb-pane-head">
+            <label htmlFor="hash-input">Text</label>
+            <button type="button" className="wb-button-plain" onClick={() => setInput("")} disabled={!input}>Clear</button>
+          </div>
+          <textarea id="hash-input" value={input} onChange={(event) => setInput(event.target.value)} placeholder="Type or paste text" aria-describedby="hash-input-meta" spellCheck={false} autoComplete="off" />
+          <p id="hash-input-meta" className="wb-pane-meta">{bytes} {bytes === 1 ? "byte" : "bytes"} (UTF-8)</p>
+        </section>
+
+        <section className="wb-pane" aria-labelledby="hash-output-label">
+          <div className="wb-pane-head">
+            <h2 id="hash-output-label">{algorithm} hash</h2>
+            <button type="button" className="wb-button" onClick={() => copy(digest)} disabled={!digest}>
+              {copied ? <><CheckIcon />Copied</> : <><CopyIcon />Copy</>}
+            </button>
+          </div>
+          <output className="wb-digest" htmlFor="hash-input" data-empty={digest ? undefined : "true"}>{digest || "Calculating…"}</output>
+          <p className="wb-pane-meta">{digest.length || BITS[algorithm] / 4} hex characters · lowercase</p>
+        </section>
+      </div>
+      <p className="wb-sr" role="status" aria-live="polite">{announcement}</p>
+
+      <p className="wb-hint">Computed by your browser with the Web Crypto API. SHA-1 is broken for security uses; prefer SHA-256 or longer.</p>
+    </Workbench>
+  );
 }
