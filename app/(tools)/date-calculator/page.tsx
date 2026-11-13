@@ -1,31 +1,71 @@
 "use client";
 
-import { useMemo, useState } from "react";
-import { CALENDAR_TIME_ZONE, toInputValue, displayDate, dateDifference, shiftDate } from "@/lib/date-calculator/arithmetic";
+import { useState } from "react";
+import { Segmented, ToolIntro, useIsClient, Workbench } from "@/components/workbench";
+import { dateDifference, displayDate, shiftDate, toInputValue, type DateUnit } from "@/lib/date-calculator/arithmetic";
 
+const UNITS = [{ value: "days", label: "Days" }, { value: "weeks", label: "Weeks" }, { value: "months", label: "Months" }] as const;
+const DATE_RE = /^\d{4}-\d{2}-\d{2}$/;
+const addDays = (value: string, days: number) => toInputValue(new Date(new Date(`${value}T00:00:00Z`).getTime() + days * 86400000));
 
-export default function Home() {
-  const today = useMemo(() => new Date(), []);
-  const [start, setStart] = useState(toInputValue(today));
-  const [end, setEnd] = useState(toInputValue(new Date(today.getTime() + 7 * 86400000)));
-  const [base, setBase] = useState(toInputValue(today));
-  const [amount, setAmount] = useState(14);
-  const [unit, setUnit] = useState<"days" | "weeks" | "months">("days");
-  const diff = useMemo(() => dateDifference(start, end), [start, end]);
-  const shifted = useMemo(() => shiftDate(base, amount, unit), [base, amount, unit]);
-  const direction = diff.days >= 0 ? "forward" : "backward";
-  const todayParts = new Intl.DateTimeFormat("en-US", { timeZone: CALENDAR_TIME_ZONE, day: "2-digit", month: "short" }).formatToParts(today);
-  const todayDay = todayParts.find((part) => part.type === "day")?.value ?? "01";
-  const todayMonth = (todayParts.find((part) => part.type === "month")?.value ?? "Jan").toUpperCase();
+export default function DateCalculatorTool() {
+  // Today depends on the viewer's clock, so the defaults are only filled in after hydration
+  // (otherwise the build-time date would be baked into the HTML: React error #418).
+  const isClient = useIsClient();
+  const today = isClient ? toInputValue(new Date()) : "";
+  const [start, setStart] = useState<string | null>(null);
+  const [end, setEnd] = useState<string | null>(null);
+  const [base, setBase] = useState<string | null>(null);
+  const [amount, setAmount] = useState("14");
+  const [unit, setUnit] = useState<DateUnit>("days");
+
+  const startValue = start ?? today;
+  const endValue = end ?? (today ? addDays(today, 7) : "");
+  const baseValue = base ?? today;
+  const amountNumber = Number(amount);
+  const amountValid = amount.trim() !== "" && Number.isInteger(amountNumber) && Math.abs(amountNumber) <= 100000;
+
+  const diff = DATE_RE.test(startValue) && DATE_RE.test(endValue) ? dateDifference(startValue, endValue) : null;
+  const shifted = DATE_RE.test(baseValue) && amountValid ? shiftDate(baseValue, amountNumber, unit) : null;
 
   return (
-    <main className="calendar-shell">
-      <header className="calendar-header"><div className="calendar-glyph" aria-hidden="true"><span>01</span><span>07</span><span>14</span><span>21</span><span>28</span></div><div><p className="calendar-kicker">DATE CALCULATOR / CALENDAR SLIDE</p><h1>Put a measure<br /><i>on time.</i></h1><p className="calendar-deck">Compare two dates or push a date forward. The answer stays close to the inputs, like a ruler laid across the calendar.</p></div><div className="today-marker"><span>TODAY</span><strong>{todayDay}</strong><small>{todayMonth}</small></div></header>
+    <Workbench>
+      <ToolIntro title="Date Calculator" summary="Count the days between two dates, or add and subtract days, weeks or months." />
 
-      <section className="difference-section" aria-labelledby="difference-title"><div className="section-rail"><span className="rail-dot" /><p>01 / COMPARE</p><span>INTERVAL</span></div><div className="compare-main"><div className="section-heading"><div><p className="calendar-kicker">DIFFERENCE</p><h2 id="difference-title">How far apart?</h2></div><span className="direction-word">{direction}</span></div><div className="date-inputs"><label><span>START</span><input type="date" value={start} onChange={(event) => setStart(event.target.value)} /><b>{displayDate(start)}</b></label><div className="measure-line" aria-hidden="true"><i /><i /><strong>{diff.days >= 0 ? "→" : "←"}</strong></div><label><span>END</span><input type="date" value={end} onChange={(event) => setEnd(event.target.value)} /><b>{displayDate(end)}</b></label></div><div className="answer-tape"><div><span>DAYS</span><strong>{diff.days}</strong></div><div><span>WEEKS</span><strong>{diff.weeks}</strong></div><div><span>MONTHS ≈</span><strong>{diff.months}</strong></div></div></div></section>
+      <div className="wb-cards">
+        <section className="wb-card" aria-labelledby="between-title">
+          <h2 id="between-title">Days between</h2>
+          <div className="wb-inputs">
+            <label className="wb-input">Start<input type="date" value={startValue} onChange={(event) => setStart(event.target.value)} /></label>
+            <label className="wb-input">End<input type="date" value={endValue} onChange={(event) => setEnd(event.target.value)} /></label>
+          </div>
+          <dl className="wb-figures" aria-live="polite">
+            <div><dt>Days</dt><dd>{diff ? diff.days : "—"}</dd></div>
+            <div><dt>Weeks</dt><dd>{diff ? diff.weeks : "—"}</dd></div>
+            <div><dt>Months (about)</dt><dd>{diff ? diff.months : "—"}</dd></div>
+          </dl>
+          {diff && diff.days < 0 ? <p className="wb-note">The end date is before the start date, so the numbers are negative.</p> : null}
+        </section>
 
-      <section className="shift-section" aria-labelledby="shift-title"><div className="section-rail"><span className="rail-dot coral" /><p>02 / SHIFT</p><span>ARITHMETIC</span></div><div className="shift-main"><div className="section-heading"><div><p className="calendar-kicker">ADD / SUBTRACT</p><h2 id="shift-title">Where will it land?</h2></div><div className="result-badge"><span>RESULT</span><strong>{displayDate(shifted)}</strong></div></div><div className="shift-controls"><label><span>BASE DATE</span><input type="date" value={base} onChange={(event) => setBase(event.target.value)} /></label><label><span>AMOUNT</span><input type="number" value={amount} onChange={(event) => setAmount(Number(event.target.value))} /></label><label><span>UNIT</span><select value={unit} onChange={(event) => setUnit(event.target.value as typeof unit)}><option value="days">days</option><option value="weeks">weeks</option><option value="months">months</option></select></label></div><div className="shift-equation"><span>{displayDate(base)}</span><b>{amount >= 0 ? "+" : "−"} {Math.abs(amount)} {unit}</b><strong>→ {displayDate(shifted)}</strong></div><p className="honesty-note">Month results use the browser calendar for shifting. The comparison’s month figure is an average of 30.44 days.</p></div></section>
-      <footer className="calendar-footer"><span>DATE CALCULATOR / 2026</span><span>Browser-only arithmetic · no account · no API</span></footer>
-    </main>
+        <section className="wb-card" aria-labelledby="shift-title">
+          <h2 id="shift-title">Add or subtract</h2>
+          <div className="wb-inputs">
+            <label className="wb-input">Date<input type="date" value={baseValue} onChange={(event) => setBase(event.target.value)} /></label>
+            <label className="wb-input">Amount<input type="number" inputMode="numeric" step={1} value={amount} onChange={(event) => setAmount(event.target.value)} aria-invalid={amountValid ? undefined : true} aria-describedby="shift-amount-hint" /></label>
+            <Segmented label="Unit" options={UNITS} value={unit} onChange={setUnit} />
+          </div>
+          <p id="shift-amount-hint" className="wb-note">Use a negative amount to go back in time.{amountValid ? "" : " Enter a whole number."}</p>
+          <p className="wb-answer" aria-live="polite">
+            {shifted && baseValue ? (
+              <>{displayDate(baseValue)} {amountNumber >= 0 ? "+" : "−"} {Math.abs(amountNumber)} {unit}<strong>{displayDate(shifted)}</strong></>
+            ) : (
+              <>Result<strong>—</strong></>
+            )}
+          </p>
+        </section>
+      </div>
+
+      <p className="wb-hint">Dates use the Asia/Bangkok calendar. The month figure in “Days between” is an average of 30.44 days; adding months uses the calendar.</p>
+    </Workbench>
   );
 }

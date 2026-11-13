@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState, type ReactNode } from "react";
+import { useEffect, useRef, useState, useSyncExternalStore, type ReactNode } from "react";
 
 /**
  * Workbench shell: the shared building blocks for single-purpose tools (styles in app/workbench.css).
@@ -85,4 +85,14 @@ export function useCopy(current: string, onResult?: (copied: boolean) => void) {
     if (ok) timer.current = window.setTimeout(() => setCopiedText(null), 1600);
   };
   return { copied: copiedText !== null && copiedText === current, copy };
+}
+
+const noopSubscribe = () => () => {};
+/**
+ * False on the server and during hydration, true afterwards. Use it for values that depend on the
+ * viewer's clock or time zone (today's date, next cron runs) so server HTML never disagrees with the
+ * browser (React hydration error #418).
+ */
+export function useIsClient(): boolean {
+  return useSyncExternalStore(noopSubscribe, () => true, () => false);
 }
