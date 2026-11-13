@@ -9,5 +9,6 @@ describe("cron next runs", () => {
     const html = renderToString(<CronPage />);
     expect(html).not.toMatch(/<time>/);
     expect(html).toContain("Calculating in your local time");
+    expect(html).toContain('class="wb"');
   });
 });

@@ -1,7 +1,7 @@
 "use client";
 
-import Link from "next/link";
 import { useMemo, useState } from "react";
+import { CheckIcon, CopyIcon, ToolIntro, useCopy, Workbench } from "@/components/workbench";
 import { renderMarkdown } from "@/lib/markdown-editor/render";
 
 const SAMPLE = `# Markdown Editor
@@ -20,24 +20,46 @@ console.log("hello");
 \`\`\`
 `;
 
-
-export default function Home() {
+export default function MarkdownEditorTool() {
   const [source, setSource] = useState(SAMPLE);
-  const [copied, setCopied] = useState(false);
+  const [announcement, setAnnouncement] = useState("");
+  const { copied, copy } = useCopy(source, (ok) => setAnnouncement(ok ? "Markdown copied to the clipboard." : "Copy was blocked. Select the text and copy it by hand."));
+  // renderMarkdown escapes HTML in the source before adding its own tags.
   const preview = useMemo(() => renderMarkdown(source), [source]);
   const lines = source ? source.split("\n").length : 0;
-
-  async function copySource() {
-    try { await navigator.clipboard.writeText(source); setCopied(true); window.setTimeout(() => setCopied(false), 1400); } catch { setCopied(false); }
-  }
+  const words = source.trim() ? source.trim().split(/\s+/).length : 0;
 
   return (
-    <main className="press-shell">
-      <header className="press-topbar"><Link href="/" className="press-mark">TYPE / CHECK</Link><span>client-side writing bench</span><span>{lines} lines · {source.length} chars</span></header>
-      <section className="press-hero"><h1>Write it.<br /><em>See it.</em></h1><p>Draft a note, README, or idea with the source and its rendered shape held open at the same time.</p><div className="press-stamp">LOCAL<br />PROOF</div></section>
-      <section className="press-toolbar"><span>Two plates / one draft</span><div><button onClick={() => setSource(SAMPLE)}>Reset sample</button><button className="ink-button" onClick={() => void copySource()}>{copied ? "Copied source" : "Copy source"} ↗</button></div></section>
-      <section className="writing-bench"><div className="paper-panel source-panel"><div className="panel-head"><span>01 / source</span><span>markdown</span></div><textarea aria-label="Markdown source" value={source} onChange={(event) => setSource(event.target.value)} spellCheck={false} /></div><div className="paper-panel preview-panel"><div className="panel-head"><span>02 / proof</span><span>live preview</span></div><article className="markdown-preview" dangerouslySetInnerHTML={{ __html: preview }} /></div></section>
-      <footer className="press-footer"><span>BOOKCHAOWALIT / MARKDOWN EDITOR</span><span>NOT COMMONMARK-COMPLETE · NO CLOUD SAVE</span></footer>
-    </main>
+    <Workbench>
+      <ToolIntro title="Markdown Editor" summary="Write Markdown on the left and see the formatted result on the right as you type." />
+
+      <div className="wb-panes wb-panes-tall">
+        <section className="wb-pane">
+          <div className="wb-pane-head">
+            <label htmlFor="md-source">Markdown</label>
+            <div className="wb-pane-tools">
+              <button type="button" className="wb-button-plain" onClick={() => setSource(SAMPLE)} disabled={source === SAMPLE}>Reset</button>
+              <button type="button" className="wb-button" onClick={() => copy(source)} disabled={!source}>
+                {copied ? <><CheckIcon />Copied</> : <><CopyIcon />Copy</>}
+              </button>
+            </div>
+          </div>
+          <textarea id="md-source" value={source} onChange={(event) => setSource(event.target.value)} placeholder="Start writing Markdown" aria-describedby="md-meta" spellCheck={false} />
+          <p id="md-meta" className="wb-pane-meta">{lines} lines · {words} words · {source.length} characters</p>
+        </section>
+
+        <section className="wb-pane" aria-labelledby="md-preview-label">
+          <div className="wb-pane-head"><h2 id="md-preview-label">Preview</h2></div>
+          {source.trim() ? (
+            <article className="wb-prose" dangerouslySetInnerHTML={{ __html: preview }} />
+          ) : (
+            <p className="wb-note wb-diff-empty">The formatted text appears here.</p>
+          )}
+        </section>
+      </div>
+      <p className="wb-sr" role="status" aria-live="polite">{announcement}</p>
+
+      <p className="wb-hint">Covers headings, bold, italic, links, lists, quotes and code. Not a full CommonMark implementation; nothing is saved.</p>
+    </Workbench>
   );
 }
