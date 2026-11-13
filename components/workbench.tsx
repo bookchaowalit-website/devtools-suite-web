@@ -66,18 +66,22 @@ export function Segmented<T extends string>({ label, options, value, onChange }:
   );
 }
 
-/** Copies text and shows "Copied" for a moment; the parent announces the result through its live region. */
-export function useCopy(onResult?: (copied: boolean) => void) {
-  const [copied, setCopied] = useState(false);
+/**
+ * Copies text and shows "Copied" for a moment; the parent announces the result through its live region.
+ * `copied` is true only while `current` is still the text that was copied, so editing the input right
+ * after copying never leaves a "Copied" label on a result that is not in the clipboard.
+ */
+export function useCopy(current: string, onResult?: (copied: boolean) => void) {
+  const [copiedText, setCopiedText] = useState<string | null>(null);
   const timer = useRef<number | undefined>(undefined);
   useEffect(() => () => window.clearTimeout(timer.current), []);
   const copy = async (text: string) => {
     let ok = false;
     try { await navigator.clipboard.writeText(text); ok = true; } catch { ok = false; }
-    setCopied(ok);
+    setCopiedText(ok ? text : null);
     onResult?.(ok);
     window.clearTimeout(timer.current);
-    if (ok) timer.current = window.setTimeout(() => setCopied(false), 1600);
+    if (ok) timer.current = window.setTimeout(() => setCopiedText(null), 1600);
   };
-  return { copied, copy };
+  return { copied: copiedText !== null && copiedText === current, copy };
 }

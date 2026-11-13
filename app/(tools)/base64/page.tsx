@@ -25,10 +25,10 @@ export default function Base64Tool() {
   const [mode, setMode] = useState<Mode>("encode");
   const [urlSafe, setUrlSafe] = useState(false);
   const [announcement, setAnnouncement] = useState("");
-  const { copied, copy } = useCopy((ok) => setAnnouncement(ok ? "Result copied to the clipboard." : "Copy was blocked. Select the result and copy it by hand."));
 
   // The result follows the input as you type; there is no separate convert step.
   const { output, error } = convert(mode, input, urlSafe);
+  const { copied, copy } = useCopy(output, (ok) => setAnnouncement(ok ? "Result copied to the clipboard." : "Copy was blocked. Select the result and copy it by hand."));
   const inputLabel = mode === "encode" ? "Text" : "Base64";
   const outputLabel = mode === "encode" ? "Base64" : "Text";
 

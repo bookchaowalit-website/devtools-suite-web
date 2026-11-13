@@ -12,7 +12,6 @@ export default function HashTool() {
   // The digest is stored with the input and algorithm it belongs to, so a stale result is never shown.
   const [result, setResult] = useState<{ key: string; digest: string } | null>(null);
   const [announcement, setAnnouncement] = useState("");
-  const { copied, copy } = useCopy((ok) => setAnnouncement(ok ? "Hash copied to the clipboard." : "Copy was blocked. Select the hash and copy it by hand."));
 
   const key = `${algorithm}\u0000${input}`;
   useEffect(() => {
@@ -21,6 +20,7 @@ export default function HashTool() {
     return () => { cancelled = true; };
   }, [algorithm, input]);
   const digest = result?.key === key ? result.digest : "";
+  const { copied, copy } = useCopy(digest, (ok) => setAnnouncement(ok ? "Hash copied to the clipboard." : "Copy was blocked. Select the hash and copy it by hand."));
   const bytes = new TextEncoder().encode(input).length;
 
   return (

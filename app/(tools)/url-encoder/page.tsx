@@ -20,13 +20,13 @@ export default function UrlEncoderTool() {
   const [plusAsSpace, setPlusAsSpace] = useState(false);
   const [query, setQuery] = useState<QueryResult | null>(null);
   const [announcement, setAnnouncement] = useState("");
-  const { copied, copy } = useCopy((ok) => setAnnouncement(ok ? "Result copied to the clipboard." : "Copy was blocked. Select the result and copy it by hand."));
 
   const mode = `${scope}-${direction}` as Mode;
   // Live result: the codec is cheap, so it runs on every keystroke.
   const result = convert(mode, input, plusAsSpace);
   const output = result.ok ? result.value : "";
   const error = result.ok ? "" : result.error;
+  const { copied, copy } = useCopy(output, (ok) => setAnnouncement(ok ? "Result copied to the clipboard." : "Copy was blocked. Select the result and copy it by hand."));
   const inputLabel = direction === "encode" ? "Text" : "Encoded";
   const outputLabel = direction === "encode" ? "Encoded" : "Text";
 
