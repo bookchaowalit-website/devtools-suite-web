@@ -99,3 +99,27 @@ describe("/diffchecker on the Workbench shell", () => {
     expect(html).not.toMatch(/evidence|forensic/i);
   });
 });
+
+import ColorPalettesTool from "@/app/(tools)/color-palettes/page";
+import MarkdownEditorTool from "@/app/(tools)/markdown-editor/page";
+
+describe("/markdown-editor on the Workbench shell", () => {
+  const html = renderToString(<MarkdownEditorTool />);
+  it("renders the sample preview next to a labelled source field", () => {
+    expect(html).toContain('class="wb"');
+    expect(html).toContain('<label for="md-source">Markdown</label>');
+    expect(html).toMatch(/<h1[^>]*>Markdown Editor<\/h1>/);
+    expect(html).not.toMatch(/two plates|proof/i);
+  });
+});
+
+describe("/color-palettes on the Workbench shell", () => {
+  const html = renderToString(<ColorPalettesTool />);
+  it("offers six palettes as a radio group and exports CSS by default", () => {
+    expect(html).toContain('class="wb"');
+    expect(html.match(/name="palette"/g)?.length).toBe(6);
+    expect(html).toContain("--color-1: #FF6B6B;");
+    expect(html.match(/aria-label="Copy #[0-9A-F]{6}"/g)?.length).toBe(5);
+    expect(html).not.toMatch(/swatch library|edition/i);
+  });
+});
