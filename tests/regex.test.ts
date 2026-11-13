@@ -29,3 +29,11 @@ test("segments mark matched text and skip empty matches", () => {
     { text: "a", match: false }, { text: "12", match: true }, { text: "b", match: false }, { text: "3", match: true },
   ]);
 });
+
+test("toLiteral escapes slashes and line breaks so the copied literal is valid JavaScript", async () => {
+  const { toLiteral } = await import("@/lib/regex/run");
+  assert.equal(toLiteral("a/b", "g"), String.raw`/a\/b/g`);
+  assert.equal(toLiteral(String.raw`\b\w+\b`, "gi"), String.raw`/\b\w+\b/gi`);
+  const literal = toLiteral("x\ny/z", "");
+  assert.equal(new Function(`return ${literal}`)().source, new RegExp("x\ny/z").source);
+});

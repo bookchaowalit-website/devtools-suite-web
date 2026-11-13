@@ -2,7 +2,7 @@
 
 import { useMemo, useState } from "react";
 import { AlertIcon, CheckIcon, CopyIcon, ToolIntro, useCopy, Workbench } from "@/components/workbench";
-import { FLAGS, MAX_MATCHES, runRegex, segments } from "@/lib/regex/run";
+import { FLAGS, MAX_MATCHES, runRegex, segments, toLiteral } from "@/lib/regex/run";
 
 export default function RegexTool() {
   // String.raw keeps the backslashes: in a normal string "\b" is a backspace character.
@@ -10,7 +10,7 @@ export default function RegexTool() {
   const [flags, setFlags] = useState("g");
   const [text, setText] = useState("The quick brown fox jumps over the lazy dog.");
   const [announcement, setAnnouncement] = useState("");
-  const literal = `/${pattern}/${flags}`;
+  const literal = toLiteral(pattern, flags);
   const { copied, copy } = useCopy(literal, (ok) => setAnnouncement(ok ? "Pattern copied to the clipboard." : "Copy was blocked. Select the pattern and copy it by hand."));
 
   // Live result: the pattern runs on every keystroke.

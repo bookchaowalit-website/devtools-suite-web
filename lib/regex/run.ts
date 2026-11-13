@@ -49,3 +49,15 @@ export function segments(text: string, matches: Match[]): { text: string; match:
   if (cursor < text.length) out.push({ text: text.slice(cursor), match: false });
   return out;
 }
+
+/**
+ * The pattern as a JavaScript regex literal. RegExp#toString escapes "/" and line breaks in the
+ * source, so a pattern like "a/b" copies as /a\/b/g instead of the broken /a/b/g.
+ */
+export function toLiteral(pattern: string, flags: string): string {
+  try {
+    return new RegExp(pattern, flags).toString();
+  } catch {
+    return `/${pattern}/${flags}`;
+  }
+}
