@@ -1,63 +1,67 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import { SNIPPETS, filterSnippets } from "@/lib/snippets/catalog";
+import { CheckIcon, CopyIcon, Segmented, ToolIntro, useCopy, Workbench } from "@/components/workbench";
+import { filterSnippets, SNIPPETS } from "@/lib/snippets/catalog";
 
+const CATEGORIES = ["All", "React", "Python", "TypeScript"].map((value) => ({ value, label: value }));
 
-export default function Home() {
+export default function SnippetsTool() {
   const [query, setQuery] = useState("");
   const [category, setCategory] = useState("All");
   const [selectedId, setSelectedId] = useState(SNIPPETS[0].id);
-  const [copied, setCopied] = useState(false);
+  const [announcement, setAnnouncement] = useState("");
   const visible = useMemo(() => filterSnippets(SNIPPETS, query, category), [category, query]);
-  const selected = SNIPPETS.find((snippet) => snippet.id === selectedId) || visible[0] || SNIPPETS[0];
-
-  async function copyCode() {
-    try {
-      await navigator.clipboard.writeText(selected.code);
-      setCopied(true);
-      window.setTimeout(() => setCopied(false), 1400);
-    } catch { setCopied(false); }
-  }
+  // Only show a snippet that is still in the filtered list; fall back to the first match.
+  const selected = visible.find((snippet) => snippet.id === selectedId) ?? visible[0] ?? null;
+  const { copied, copy } = useCopy(selected?.code ?? "", (ok) => setAnnouncement(ok ? "Code copied to the clipboard." : "Copy was blocked. Select the code and copy it by hand."));
 
   return (
-    <main className="snippet-shell">
-      <header className="snippet-header">
-        <div className="snippet-brand"><span className="snippet-cursor" aria-hidden="true" /><span>SPECIMEN / INDEX</span></div>
-      </header>
+    <Workbench>
+      <ToolIntro title="Snippets" summary="A small library of reusable code snippets. Filter, read the whole snippet and copy it." privacy="Sample snippets bundled with the page. Nothing is uploaded or saved." />
 
-      <section className="snippet-intro">
-        <div>
-          <h1>Small code, kept sharp.</h1>
-          <p>A local shelf of reusable specimens. Pick a language, read the whole shape, copy the part worth keeping.</p>
-        </div>
-        <span className="snippet-count">{String(SNIPPETS.length).padStart(2, "0")} specimens / local data</span>
-      </section>
+      <div className="wb-controls">
+        <Segmented label="Language" options={CATEGORIES} value={category} onChange={setCategory} />
+        <label className="wb-search">
+          <span className="wb-sr">Search snippets</span>
+          <input type="search" value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Search title, language or tag" />
+        </label>
+      </div>
+      <p className="wb-sr" role="status" aria-live="polite">{announcement}</p>
 
-      <section className="snippet-controls" aria-label="Snippet filters">
-        <label><span>FIND</span><input aria-label="Search snippets" placeholder="Search title, language, tag" value={query} onChange={(event) => setQuery(event.target.value)} /></label>
-        <div className="snippet-categories"><span>GROUP</span>{["All", "React", "Python", "TypeScript"].map((item) => <button key={item} type="button" aria-pressed={category === item} onClick={() => setCategory(item)}>{item}</button>)}</div>
-      </section>
+      <div className="wb-library">
+        <nav className="wb-card wb-library-list" aria-label="Snippets">
+          {visible.length ? (
+            <ul>
+              {visible.map((snippet) => (
+                <li key={snippet.id}>
+                  <button type="button" aria-current={selected?.id === snippet.id ? "true" : undefined} onClick={() => setSelectedId(snippet.id)}>
+                    <strong>{snippet.title}</strong>
+                    <span>{snippet.language}</span>
+                  </button>
+                </li>
+              ))}
+            </ul>
+          ) : (
+            <p className="wb-note">No snippet matches. Try another word or choose All.</p>
+          )}
+        </nav>
 
-      <section className="snippet-stage">
-        <aside className="snippet-list" aria-label="Snippet list">
-          <div className="snippet-list-head"><span>LIBRARY</span><span>{visible.length} / {SNIPPETS.length}</span></div>
-          {visible.length > 0 ? visible.map((snippet, index) => <button key={snippet.id} type="button" className={`snippet-entry ${selected.id === snippet.id ? "is-selected" : ""}`} onClick={() => setSelectedId(snippet.id)}><span>{String(index + 1).padStart(2, "0")}</span><strong>{snippet.title}</strong><small>{snippet.language}</small></button>) : <p className="snippet-empty">No specimen found.</p>}
-        </aside>
+        {selected ? (
+          <section className="wb-pane" aria-labelledby="snippet-title">
+            <div className="wb-pane-head">
+              <h2 id="snippet-title">{selected.title} <span className="wb-muted">{selected.language}</span></h2>
+              <button type="button" className="wb-button" onClick={() => copy(selected.code)}>
+                {copied ? <><CheckIcon />Copied</> : <><CopyIcon />Copy</>}
+              </button>
+            </div>
+            <pre className="wb-code wb-code-lines"><code>{selected.code.split("\n").map((line, index) => <span key={index}>{line || " "}</span>)}</code></pre>
+            <p className="wb-pane-meta">{selected.tags.map((tag) => `#${tag}`).join("  ")}</p>
+          </section>
+        ) : null}
+      </div>
 
-        <article className="snippet-sheet" aria-live="polite">
-          <div className="snippet-sheet-top"><span>{selected.category} / {selected.language}</span><span>#{selected.id.padStart(2, "0")}</span></div>
-          <h2>{selected.title}</h2>
-          <div className="snippet-code" aria-label={`${selected.title} code`}>
-            <div className="snippet-code-bar"><span>source specimen</span><button type="button" onClick={copyCode}>{copied ? "COPIED" : "COPY CODE"}</button></div>
-            <pre><code>{selected.code.split("\n").map((line, index) => <span className="snippet-line" key={`${line}-${index}`}><i>{String(index + 1).padStart(2, "0")}</i>{line || " "}</span>)}</code></pre>
-          </div>
-          <div className="snippet-tags">{selected.tags.map((tag) => <span key={tag}>#{tag}</span>)}</div>
-          <p className="snippet-sheet-note">Authored demo data · copy stays in your browser clipboard · no save account.</p>
-        </article>
-      </section>
-
-      <footer className="snippet-footer"><span>BOOKCHAOWALIT / DEV TOOLS</span><span>READ THE SHAPE BEFORE YOU REUSE IT</span></footer>
-    </main>
+      <p className="wb-hint">These are sample snippets for demos; read the code before you reuse it.</p>
+    </Workbench>
   );
 }

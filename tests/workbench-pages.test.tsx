@@ -123,3 +123,48 @@ describe("/color-palettes on the Workbench shell", () => {
     expect(html).not.toMatch(/swatch library|edition/i);
   });
 });
+
+import ClipboardManagerTool from "@/app/(tools)/clipboard-manager/page";
+import EngineeringCalcTool from "@/app/(tools)/engineering-calc/page";
+import LatencyTool from "@/app/(tools)/latency-test/page";
+import RegexTool from "@/app/(tools)/regex/page";
+import SnippetsTool from "@/app/(tools)/snippets/page";
+
+describe("the last five tools on the Workbench shell", () => {
+  it("/regex matches every word of the sample (the default pattern keeps its backslashes)", () => {
+    const html = renderToString(<RegexTool />);
+    expect(html).toContain('class="wb"');
+    expect(html).toContain('value="\\b\\w+\\b"');
+    expect(html).toMatch(/9(<!-- -->)? (<!-- -->)?matches/);
+    expect(html).not.toMatch(/print the pattern|impression/i);
+  });
+
+  it("/engineering-calc shows a live result for the default inputs", () => {
+    const html = renderToString(<EngineeringCalcTool />);
+    expect(html).toContain('class="wb"');
+    expect(html).toContain("8.82"); // 4 kN/m × 4.2² / 8
+    expect(html).toContain("Illustrative only");
+  });
+
+  it("/latency-test starts empty with a labelled URL field", () => {
+    const html = renderToString(<LatencyTool />);
+    expect(html).toContain('class="wb"');
+    expect(html).toContain('for="latency-url"');
+    expect(html).toContain("No tests yet");
+  });
+
+  it("/clipboard-manager waits for localStorage before saying it is empty", () => {
+    const html = renderToString(<ClipboardManagerTool />);
+    expect(html).toContain('class="wb"');
+    expect(html).toContain("Loading saved items");
+    expect(html).toContain('for="clip-draft"');
+  });
+
+  it("/snippets lists every snippet and shows the first one", () => {
+    const html = renderToString(<SnippetsTool />);
+    expect(html).toContain('class="wb"');
+    expect(html).toContain("React Hook");
+    expect(html).toContain('aria-current="true"');
+    expect(html).not.toMatch(/specimen/i);
+  });
+});

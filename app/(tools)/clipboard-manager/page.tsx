@@ -1,88 +1,100 @@
 "use client";
 
 import { useEffect, useMemo, useRef, useState } from "react";
-
-import { addSnippet, togglePin, deleteSnippet, searchSnippets, type Snippet } from "@/lib/clipboard-manager/store";
+import { CheckIcon, CopyIcon, ToolIntro, useCopy, Workbench } from "@/components/workbench";
+import { addSnippet, deleteSnippet, searchSnippets, togglePin, type Snippet } from "@/lib/clipboard-manager/store";
 import { readSnippets, writeSnippets } from "@/lib/clipboard-manager/storage";
+
 const KEY = "devtools-suite:clipboard-manager:items-v2";
 
-async function copyText(text: string) {
-  try { await navigator.clipboard.writeText(text); return true; } catch { return false; }
-}
-
-export default function Home() {
+export default function ClipboardManagerTool() {
   const [items, setItems] = useState<Snippet[]>([]);
+  const [loaded, setLoaded] = useState(false);
   const [draft, setDraft] = useState("");
   const [query, setQuery] = useState("");
-  const [status, setStatus] = useState("ARCHIVE READY / LOCAL ONLY");
-  const [copied, setCopied] = useState<string | null>(null);
+  const [copiedId, setCopiedId] = useState<string | null>(null);
+  const [announcement, setAnnouncement] = useState("");
   const hydrated = useRef(false);
+  const copiedText = items.find((item) => item.id === copiedId)?.text ?? "";
+  const { copied, copy } = useCopy(copiedText, (ok) => setAnnouncement(ok ? "Copied to the clipboard." : "Copy was blocked. Select the text and copy it by hand."));
 
+  // Saved items live in this browser's localStorage; read them after hydration.
   useEffect(() => {
     const timer = window.setTimeout(() => {
-      try {
-        setItems(readSnippets(localStorage, KEY));
-      } catch { try { localStorage.removeItem(KEY); } catch { /* storage unavailable */ } }
+      try { setItems(readSnippets(localStorage, KEY)); } catch { try { localStorage.removeItem(KEY); } catch { /* storage unavailable */ } }
       hydrated.current = true;
+      setLoaded(true);
     }, 0);
     return () => window.clearTimeout(timer);
   }, []);
   useEffect(() => { if (hydrated.current) { try { writeSnippets(localStorage, KEY, items); } catch { /* storage unavailable */ } } }, [items]);
 
   const filtered = useMemo(() => searchSnippets(items, query), [items, query]);
-  const pinned = items.filter((item) => item.pinned).length;
 
   const save = () => {
-    if (!draft.trim()) { setStatus("HOLD / WRITE A SNIPPET FIRST"); return; }
+    if (!draft.trim()) return;
     setItems((current) => addSnippet(current, draft, crypto.randomUUID(), Date.now()));
-    setDraft(""); setStatus("FILED / SNIPPET IN ARCHIVE");
+    setDraft("");
+    setAnnouncement("Saved.");
   };
-
-  const readClipboard = async () => {
-    try { setDraft(await navigator.clipboard.readText()); setStatus("LOADED / READY TO FILE"); }
-    catch { setStatus("CLIPBOARD CLOSED / PASTE MANUALLY"); }
+  const paste = async () => {
+    try { setDraft(await navigator.clipboard.readText()); setAnnouncement("Pasted from the clipboard. Press Save to keep it."); }
+    catch { setAnnouncement("The browser blocked clipboard access. Paste into the box with the keyboard instead."); }
   };
-
-  const copy = async (item: Snippet) => {
-    const ok = await copyText(item.text);
-    setStatus(ok ? "COPIED / READY TO DELIVER" : "COPY BLOCKED / SELECT THE TEXT");
-    if (ok) { setCopied(item.id); window.setTimeout(() => setCopied(null), 1400); }
-  };
+  const remove = (item: Snippet) => { setItems((current) => deleteSnippet(current, item.id)); setAnnouncement("Deleted."); };
 
   return (
-    <main className="archive-page">
-      <div className="archive-shell">
-        <header className="archive-header">
-          <div className="archive-brand"><span>LOCAL DISPATCH</span><strong>CLIP / BOARD</strong></div>
-          <p aria-live="polite">{status}</p>
-          <div className="archive-count"><b>{items.length.toString().padStart(2, "0")}</b><span>FILES / {pinned} PINNED</span></div>
-        </header>
+    <Workbench>
+      <ToolIntro title="Clipboard Manager" summary="Save text you paste often, then find and copy it again in one tap." privacy="Saved only in this browser (localStorage). Nothing is uploaded or synced." />
 
-        <section className="archive-intro" aria-labelledby="page-title">
-          <h1 id="page-title">Keep the useful line.</h1>
-          <p>A private browser archive for text you reuse. Save it once, find it again, and send it on its way.</p>
-        </section>
-
-        <section className="archive-layout" aria-label="Snippet archive">
-          <div className="archive-composer">
-            <div className="archive-section-head"><span>DROP SLOT / NEW FILE</span><span>01</span></div>
-            <label className="archive-label">Snippet<textarea value={draft} onChange={(event) => setDraft(event.target.value)} placeholder="Paste or type a useful line…" aria-label="New snippet" /></label>
-            <div className="archive-actions"><button type="button" className="archive-primary" onClick={save}>File snippet</button><button type="button" className="archive-secondary" onClick={readClipboard}>Read clipboard</button><button type="button" className="archive-quiet" onClick={() => { setDraft(""); setStatus("DROP SLOT CLEARED"); }}>Clear</button></div>
-            <p className="archive-hint">Browser security prevents passive clipboard listening. Nothing is synced.</p>
+      <section className="wb-pane" aria-labelledby="new-label">
+        <div className="wb-pane-head">
+          <label id="new-label" htmlFor="clip-draft">New item</label>
+          <div className="wb-pane-tools">
+            <button type="button" className="wb-button-plain" onClick={() => void paste()}>Paste</button>
+            <button type="button" className="wb-button" onClick={save} disabled={!draft.trim()}>Save</button>
           </div>
+        </div>
+        <textarea id="clip-draft" className="wb-textarea-short" value={draft} onChange={(event) => setDraft(event.target.value)} placeholder="Type or paste text to keep" spellCheck={false} />
+      </section>
+      <p className="wb-sr" role="status" aria-live="polite">{announcement}</p>
 
-          <div className="archive-list">
-            <div className="archive-section-head"><span>ARCHIVE / SEARCHABLE</span><span>02</span></div>
-            <label className="archive-search">Find in archive<input value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Search saved text" aria-label="Search snippets" /></label>
-            {filtered.length === 0 ? <p className="archive-empty">No filed snippets match this search.</p> : <ul>{filtered.map((item, index) => <li key={item.id} className={item.pinned ? "snippet is-pinned" : "snippet"}>
-              <div className="snippet-meta"><span>{String(index + 1).padStart(2, "0")}</span><time dateTime={new Date(item.createdAt).toISOString()}>{new Date(item.createdAt).toLocaleDateString()}</time>{item.pinned ? <b>PINNED</b> : null}</div>
-              <pre>{item.text}</pre>
-              <div className="snippet-actions"><button type="button" onClick={() => void copy(item)}>{copied === item.id ? "Copied" : "Copy"}</button><button type="button" onClick={() => setItems((current) => togglePin(current, item.id))}>{item.pinned ? "Unpin" : "Pin"}</button><button type="button" onClick={() => setItems((current) => deleteSnippet(current, item.id))}>Delete</button></div>
-            </li>)}</ul>}
-          </div>
-        </section>
-        <footer className="archive-footer">LOCAL STORAGE / BROWSER ONLY / BOOKCHAOWALIT DEVELOPER TOOLS</footer>
-      </div>
-    </main>
+      <section className="wb-card wb-panes-gap" aria-labelledby="saved-title">
+        <div className="wb-card-head">
+          <h2 id="saved-title">Saved <span className="wb-muted">{items.length}</span></h2>
+          <label className="wb-search">
+            <span className="wb-sr">Search saved items</span>
+            <input type="search" value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Search" />
+          </label>
+        </div>
+        {!loaded ? (
+          <p className="wb-note">Loading saved items…</p>
+        ) : items.length === 0 ? (
+          <p className="wb-note">Nothing saved yet. Paste something above and press Save.</p>
+        ) : filtered.length === 0 ? (
+          <p className="wb-note">No saved item matches “{query}”.</p>
+        ) : (
+          <ul className="wb-items">
+            {filtered.map((item) => (
+              <li key={item.id} data-pinned={item.pinned ? "true" : undefined}>
+                <pre>{item.text}</pre>
+                <div className="wb-item-bar">
+                  <span className="wb-muted">{item.pinned ? "Pinned · " : ""}{new Date(item.createdAt).toLocaleDateString()}</span>
+                  <div className="wb-pane-tools">
+                    <button type="button" className="wb-button-plain" aria-pressed={item.pinned} onClick={() => setItems((current) => togglePin(current, item.id))}>{item.pinned ? "Unpin" : "Pin"}</button>
+                    <button type="button" className="wb-button-plain wb-danger" onClick={() => remove(item)}>Delete</button>
+                    <button type="button" className="wb-button-plain" onClick={() => { setCopiedId(item.id); void copy(item.text); }}>
+                      {copied && copiedId === item.id ? <><CheckIcon />Copied</> : <><CopyIcon />Copy</>}
+                    </button>
+                  </div>
+                </div>
+              </li>
+            ))}
+          </ul>
+        )}
+      </section>
+
+      <p className="wb-hint">Browsers do not let a page watch your clipboard, so items are only saved when you press Save. Clearing site data removes them.</p>
+    </Workbench>
   );
 }

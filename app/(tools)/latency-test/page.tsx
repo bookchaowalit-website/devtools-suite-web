@@ -1,24 +1,18 @@
 "use client";
 
 import { useMemo, useState } from "react";
+import { AlertIcon, ToolIntro, Workbench } from "@/components/workbench";
 import { addRun, MAX_RUNS, normalizeTarget, summarize, TIMEOUT_MS, type Run } from "@/lib/latency-test/latency";
 
-const presets = ["/", "https://example.com", "https://bookchaowalit.com"];
+const PRESETS = ["/", "https://example.com", "https://bookchaowalit.com"];
 
-export default function Home() {
+export default function LatencyTool() {
   const [url, setUrl] = useState("/");
   const [runs, setRuns] = useState<Run[]>([]);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
   const summary = useMemo(() => summarize(runs), [runs]);
-  const average = summary.average;
   const latest = runs[0];
-  const visualLatency = Math.min(100, Math.max(5, latest ? latest.ms / 3 : 5));
-  const status = busy ? "MEASURING" : latest ? (latest.ok ? "RESPONDED" : "NO RESPONSE") : "READY";
-  const host = useMemo(() => {
-    const target = normalizeTarget(url, "http://localhost");
-    return "error" in target ? "invalid target" : target.host;
-  }, [url]);
 
   async function ping() {
     const target = normalizeTarget(url, window.location.origin);
@@ -46,44 +40,48 @@ export default function Home() {
   }
 
   return (
-    <main className="instrument-shell">
-      <header className="instrument-topbar">
-        <span className="instrument-brand"><i /> ROUND-TRIP</span>
-        <span className="instrument-mode">BROWSER INSTRUMENT / LOCAL SESSION</span>
-        <span className="instrument-clock">SESSION / LOCAL</span>
-      </header>
+    <Workbench>
+      <ToolIntro title="Latency Test" summary="Time one request from this browser to a URL. Run it a few times to see the average." privacy="Runs in your browser. The only request goes to the URL you enter." />
 
-      <section className="instrument-hero">
-        <div className="instrument-copy">
-          <p className="instrument-kicker">Packet timing laboratory</p>
-          <h1>How long does<br /><em>the signal take?</em></h1>
-          <p>Measure a URL from this browser. One request, one round trip, no server-side fiction.</p>
-        </div>
-        <div className="instrument-radar" role="img" aria-label={`Average latency ${average} milliseconds`}>
-          <div className="radar-ring ring-one" /><div className="radar-ring ring-two" /><div className="radar-ring ring-three" />
-          <div className="radar-cross cross-x" /><div className="radar-cross cross-y" /><div className="radar-sweep" />
-          <strong>{average}</strong><span>MS AVG</span>
-        </div>
-      </section>
-
-      <section className="probe-panel" aria-label="Latency probe">
-        <div className="probe-label"><span>01</span><b>Set a target</b><small>HTTP request from your current browser</small></div>
-        <form className="probe-controls" onSubmit={(event) => { event.preventDefault(); void ping(); }}>
-          <label className="target-input"><span>↳</span><input value={url} onChange={(event) => setUrl(event.target.value)} aria-label="URL to ping" placeholder="https://your-target.test" /></label>
-          <button className="probe-button" type="submit" disabled={busy}>{busy ? "WORKING…" : "PING TARGET"}<span aria-hidden="true">↗</span></button>
+      <section className="wb-card" aria-labelledby="target-label">
+        <form className="wb-expression" onSubmit={(event) => { event.preventDefault(); void ping(); }}>
+          <label id="target-label" htmlFor="latency-url" className="wb-sr">URL to test</label>
+          <input id="latency-url" value={url} onChange={(event) => setUrl(event.target.value)} placeholder="https://example.com" inputMode="url" autoComplete="url" spellCheck={false} aria-invalid={error ? true : undefined} aria-describedby={error ? "latency-error" : undefined} />
+          <button type="submit" className="wb-button" disabled={busy}>{busy ? "Testing…" : "Test"}</button>
         </form>
-        {error ? <p className="probe-error" role="alert">{error}</p> : null}
-        <div className="preset-row"><span>Try a station:</span>{presets.map((preset) => <button type="button" key={preset} onClick={() => setUrl(preset)}>{preset}</button>)}</div>
+        {error ? <p id="latency-error" className="wb-error wb-error-inline" role="alert"><AlertIcon />{error}</p> : null}
+        <div className="wb-chips" role="group" aria-label="Example URLs">
+          {PRESETS.map((preset) => (
+            <button key={preset} type="button" aria-pressed={url === preset} onClick={() => setUrl(preset)}>{preset === "/" ? "This site" : preset.replace("https://", "")}</button>
+          ))}
+        </div>
       </section>
 
-      <section className="readout-grid">
-        <div className="readout-card readout-primary"><div className="readout-heading"><span>02 / Current reading</span><b className={busy ? "live-dot pulse" : "live-dot"} />{status}</div><div className="big-reading">{latest ? latest.ms : "—"}<small>ms</small></div><div className="signal-track"><i style={{ width: `${visualLatency}%` }} /></div><div className="readout-meta"><span>{latest ? latest.target : host}</span><span>{latest ? new Date(latest.at).toLocaleTimeString() : "Awaiting probe"}</span></div></div>
-        <div className="readout-card"><div className="readout-heading"><span>03 / Session average</span><b>{MAX_RUNS} max</b></div><div className="average-reading">{average}<small>ms</small></div><p>{summary.ok} of {runs.length} {runs.length === 1 ? "request" : "requests"} responded in this tab.{summary.ok > 1 ? ` Median ${summary.median} ms · min ${summary.min} · max ${summary.max}.` : ""} Failed requests are excluded from timing.</p></div>
+      <dl className="wb-figures" aria-live="polite">
+        <div><dt>Last</dt><dd>{latest ? (latest.ok ? `${latest.ms} ms` : "Failed") : "—"}</dd></div>
+        <div><dt>Average</dt><dd>{summary.ok ? `${summary.average} ms` : "—"}</dd></div>
+        <div><dt>Median</dt><dd>{summary.ok > 1 ? `${summary.median} ms` : "—"}</dd></div>
+        <div><dt>Min – max</dt><dd>{summary.ok > 1 ? `${summary.min}–${summary.max}` : "—"}</dd></div>
+      </dl>
+
+      <section className="wb-card wb-panes-gap" aria-labelledby="log-title">
+        <h2 id="log-title">History <span className="wb-muted">newest first, last {MAX_RUNS}</span></h2>
+        {runs.length ? (
+          <ol className="wb-list wb-log">
+            {runs.map((run, index) => (
+              <li key={`${run.at}-${index}`}>
+                <strong>{run.ok ? `${run.ms} ms` : "Failed"}</strong>
+                <span>{run.target}</span>
+                <span className="wb-muted">{run.ok ? "" : `after ${run.ms} ms · `}{new Date(run.at).toLocaleTimeString()}</span>
+              </li>
+            ))}
+          </ol>
+        ) : (
+          <p className="wb-note">No tests yet. Press Test to time the first request.</p>
+        )}
       </section>
 
-      <section className="log-section"><div className="log-title"><span>04 / Measurement log</span><span>{runs.length ? "newest first" : "no readings yet"}</span></div>{runs.length > 0 ? <div className="log-list">{runs.map((run, index) => <div className="log-row" key={`${run.at}-${index}`}><span>{String(index + 1).padStart(2, "0")}</span><strong>{run.ms}<small>ms</small></strong><span>{run.ok ? "response received" : "failed or timed out"}</span><span>{run.target}</span><time>{new Date(run.at).toLocaleTimeString()}</time></div>)}</div> : <div className="log-empty">Run a probe to leave the first trace in this session.</div>}</section>
-
-      <footer className="instrument-footer"><span>HONEST DEMO / CORS AND NETWORK CONDITIONS APPLY</span><span>R-T / 001</span></footer>
-    </main>
+      <p className="wb-hint">Timing includes DNS, connection and server time as seen by this browser. Cross-site requests can only report that a response arrived, not its status. Failed requests are left out of the average. Times out after {TIMEOUT_MS / 1000} s.</p>
+    </Workbench>
   );
 }

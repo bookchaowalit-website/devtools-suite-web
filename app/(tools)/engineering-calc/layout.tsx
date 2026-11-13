@@ -1,7 +1,4 @@
 import type { Metadata } from "next";
-import "./tool.css";
-
-
 
 export const metadata: Metadata = {
   title: "Engineering Calculator",
@@ -10,5 +7,5 @@ export const metadata: Metadata = {
 };
 
 export default function ToolLayout({ children }: Readonly<{ children: React.ReactNode }>) {
-  return <div className={`tool-root t-engineering-calc antialiased`}>{children}</div>;
+  return <div className="tool-root t-engineering-calc">{children}</div>;
 }

@@ -1,9 +1,7 @@
 # Workbench shell
 
-The shared look for every single-purpose tool in this suite: calm, minimal, Apple-like. Started
-2026-11-13 with `/base64` as the pilot, then `/url-encoder`, `/hashgen`, `/number-converter`, `/jsonconverter`, `/minifier`,
-`/date-calculator`, `/colorpicker`, `/diffchecker`, `/cron`, `/markdown-editor` and `/color-palettes` the
-same day; the other 5 tools still carry their own themes and move over one at a time.
+The shared look for every tool in this suite: calm, minimal, Apple-like. Started 2026-11-13 with `/base64` as the
+pilot; all 17 tools were on the shell by the end of that day.
 
 ## Why
 
@@ -52,6 +50,5 @@ Page structure:
 4. Add a render test like `tests/base64-page.test.tsx` or `tests/workbench-pages.test.tsx`.
 5. Screenshot 375 / 768 / 1440 in light and dark before merging.
 
-Done: base64, url-encoder, hashgen, number-converter, jsonconverter, minifier, date-calculator, colorpicker,
-diffchecker, cron, markdown-editor, color-palettes. Left: latency-test, regex, engineering-calc,
-clipboard-manager, snippets.
+Done: all 17 tools (2026-11-13). New tools start on the shell; add any new pattern to `app/workbench.css` and
+list it in the Pieces table.

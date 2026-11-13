@@ -19,7 +19,7 @@ export const TOOLS: readonly Tool[] = [
   { slug: "markdown-editor", name: "Markdown Editor", description: "Split-pane Markdown editor with a lightweight live preview.", subdomain: "markdown-editor.bookchaowalit.com" },
   { slug: "minifier", name: "Code Minifier", description: "Lightweight JS / CSS / HTML / JSON minifier that runs entirely client-side.", subdomain: "minifier.bookchaowalit.com" },
   { slug: "number-converter", name: "Number Base Converter", description: "Convert integers between binary, octal, decimal, and hexadecimal.", subdomain: "number-converter.bookchaowalit.com" },
-  { slug: "regex", name: "Regex Tester", description: "A live JavaScript regular expression proof desk.", subdomain: "regex.bookchaowalit.com" },
+  { slug: "regex", name: "Regex Tester", description: "Test a JavaScript regular expression against text and see every match live.", subdomain: "regex.bookchaowalit.com" },
   { slug: "url-encoder", name: "URL Encoder", description: "Encode and decode URL components in the browser.", subdomain: "url-encoder.bookchaowalit.com" },
   { slug: "engineering-calc", name: "Engineering Calculator", description: "An illustrative field instrument for beam-load checks.", subdomain: "engineering.bookchaowalit.com" },
   { slug: "latency-test", name: "Latency Test", description: "Ping a URL from the browser.", subdomain: "latency-test.bookchaowalit.com" },
