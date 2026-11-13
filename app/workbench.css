@@ -14,7 +14,7 @@
   --wb-line: #d2d2d7;
   --wb-accent: #0066cc;
   --wb-button: #0071e3;
-  --wb-button-hover: #0077ed;
+  --wb-button-hover: #0062c4; /* darker on hover keeps white text at 5.9:1 (#0077ed was 4.3:1) */
   --wb-button-fg: #ffffff;
   --wb-focus: #0071e3;
   --wb-danger: #c9252c;
@@ -76,8 +76,9 @@
 /* Panes: input and result side by side on desktop, stacked on phones. */
 .wb-panes { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px; }
 .wb-pane { display: flex; flex-direction: column; min-width: 0; border: 1px solid var(--wb-line); border-radius: var(--wb-radius); background: var(--wb-surface); box-shadow: var(--wb-shadow); overflow: hidden; }
-.wb-pane:focus-within { border-color: var(--wb-focus); }
 .wb-pane[data-invalid="true"] { border-color: var(--wb-danger); }
+/* The textarea drops its own outline, so the pane carries the 3px ring, also when the input is invalid. */
+.wb-pane:has(textarea:focus-visible) { outline: 3px solid var(--wb-focus); outline-offset: 2px; }
 .wb-pane-head { display: flex; align-items: center; justify-content: space-between; gap: 12px; min-height: 52px; padding: 4px 8px 4px 16px; border-bottom: 1px solid var(--wb-line); }
 .wb-pane-head label, .wb-pane-head h2 { margin: 0; font-size: 15px; font-weight: 600; }
 .wb-pane textarea { flex: 1; width: 100%; min-height: 220px; margin: 0; padding: 16px; border: 0; background: transparent; font-family: var(--wb-mono); font-size: 15px; line-height: 1.6; resize: vertical; overflow-wrap: anywhere; }

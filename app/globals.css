@@ -2,8 +2,10 @@
 
 :root { color-scheme: light dark; }
 
-html { background: var(--wb-bg); }
+/* Keep anchors and the skip-link target clear of the 52px sticky header. */
+html { background: var(--wb-bg); scroll-padding-top: 64px; }
 body { margin: 0; background: var(--wb-bg); color: var(--wb-fg); font-family: var(--wb-font); -webkit-font-smoothing: antialiased; overflow-x: clip; }
+#main { scroll-margin-top: 64px; }
 #main:focus { outline: none; }
 a:focus-visible, button:focus-visible, input:focus-visible, textarea:focus-visible, select:focus-visible { outline: 3px solid var(--wb-focus); outline-offset: 2px; }
 
