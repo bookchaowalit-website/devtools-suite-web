@@ -6,6 +6,7 @@ import { describe, expect, it, vi } from "vitest";
 
 vi.mock("@vercel/analytics/react", () => ({ Analytics: () => null }));
 vi.mock("@vercel/speed-insights/next", () => ({ SpeedInsights: () => null }));
+vi.mock("next/font/google", () => ({ Inter: () => ({ variable: "font-wb", className: "font-wb" }) }));
 
 const { default: RootLayout, metadata } = await import("@/app/layout");
 
@@ -16,6 +17,12 @@ describe("site footer and metadata", () => {
     expect(html).toContain('href="https://bookchaowalit.com/privacy"');
     expect(html).toContain('href="https://monitor.bookchaowalit.com/"');
     expect(html).toContain('href="mailto:bookchaowalit.work@gmail.com"');
+  });
+
+  it("the header and footer link back to the bookchaowalit.com hub and the source", () => {
+    const html = renderToString(<RootLayout><main /></RootLayout>);
+    expect(html.match(/href="https:\/\/bookchaowalit.com\/"/g)?.length).toBe(2);
+    expect(html).toContain('href="https://github.com/bookchaowalit-website/devtools-suite-web"');
   });
 
   it("has Open Graph title, description and site name", () => {

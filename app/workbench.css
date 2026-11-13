@@ -1,0 +1,143 @@
+/*
+ * Workbench shell: the shared, calm look for every single-purpose tool in the suite.
+ * One input, one live result, one primary action. Tools opt in with the .wb class on their
+ * root; tools that still carry their own theme are untouched.
+ *
+ * Every text pair below passes 4.5:1 (checked 2026-11-13); --wb-button keeps white
+ * button text above 4.5:1 in both themes, which is why it is not the dark-mode accent.
+ */
+:root {
+  --wb-bg: #f5f5f7;
+  --wb-surface: #ffffff;
+  --wb-fg: #1d1d1f;
+  --wb-muted: #6e6e73;
+  --wb-line: #d2d2d7;
+  --wb-accent: #0066cc;
+  --wb-button: #0071e3;
+  --wb-button-hover: #0062c4; /* darker on hover keeps white text at 5.9:1 (#0077ed was 4.3:1) */
+  --wb-button-fg: #ffffff;
+  --wb-focus: #0071e3;
+  --wb-danger: #c9252c;
+  --wb-success: #1a7f37;
+  --wb-track: #e8e8ed;
+  --wb-thumb: #ffffff;
+  --wb-shadow: 0 1px 2px rgb(0 0 0 / 4%), 0 8px 24px rgb(0 0 0 / 6%);
+  --wb-radius: 18px;
+  --wb-radius-sm: 10px;
+  --wb-font: var(--font-wb), -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  --wb-mono: ui-monospace, "SFMono-Regular", Menlo, Consolas, monospace;
+}
+@media (prefers-color-scheme: dark) {
+  :root {
+    --wb-bg: #000000;
+    --wb-surface: #1c1c1e;
+    --wb-fg: #f5f5f7;
+    --wb-muted: #a1a1a6;
+    --wb-line: #38383a;
+    --wb-accent: #2997ff;
+    --wb-focus: #2997ff;
+    --wb-danger: #ff6961;
+    --wb-success: #30d158;
+    --wb-track: #2c2c2e;
+    --wb-thumb: #636366;
+    --wb-shadow: none;
+  }
+}
+
+.wb { box-sizing: border-box; min-height: calc(100vh - 120px); background: var(--wb-bg); color: var(--wb-fg); font-family: var(--wb-font); -webkit-font-smoothing: antialiased; }
+.wb *, .wb *::before, .wb *::after { box-sizing: inherit; }
+/* :where() keeps these resets at zero specificity so .wb-button colours win. */
+:where(.wb) :where(button, textarea, input) { font: inherit; color: inherit; }
+:where(.wb) :focus-visible { outline: 3px solid var(--wb-focus); outline-offset: 2px; }
+
+.wb-page { width: min(1080px, 100%); margin: 0 auto; padding: clamp(24px, 5vw, 56px) clamp(16px, 4vw, 32px) 64px; }
+
+/* Intro: title, one plain sentence, the privacy note. Short on phones so the input is in the first screen. */
+.wb-intro { margin-bottom: clamp(20px, 3vw, 32px); }
+.wb-intro h1 { margin: 0; font-size: clamp(28px, 4.5vw, 44px); line-height: 1.1; font-weight: 700; letter-spacing: -.02em; }
+.wb-intro p { margin: 8px 0 0; max-width: 60ch; color: var(--wb-muted); font-size: clamp(16px, 1.6vw, 19px); line-height: 1.5; }
+.wb-private { display: inline-flex; align-items: center; gap: 6px; margin-top: 12px; color: var(--wb-muted); font-size: 14px; }
+.wb-private svg { width: 16px; height: 16px; flex: none; }
+
+/* Controls row: segmented control on the left, options on the right. */
+.wb-controls { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 12px 24px; margin-bottom: 16px; }
+
+.wb-segmented { display: inline-grid; grid-auto-flow: column; grid-auto-columns: 1fr; gap: 2px; padding: 2px; border-radius: 12px; background: var(--wb-track); }
+.wb-segmented button { min-height: 44px; min-width: 112px; padding: 0 18px; border: 0; border-radius: 10px; background: transparent; color: var(--wb-fg); font-size: 15px; font-weight: 500; cursor: pointer; transition: background-color .2s ease, box-shadow .2s ease; }
+.wb-segmented button[aria-pressed="true"] { background: var(--wb-thumb); font-weight: 600; box-shadow: 0 1px 3px rgb(0 0 0 / 12%); }
+
+.wb-switch { display: inline-flex; align-items: center; gap: 12px; min-height: 44px; font-size: 15px; cursor: pointer; }
+.wb-switch input { appearance: none; position: relative; flex: none; width: 44px; height: 26px; margin: 0; border-radius: 13px; background: var(--wb-track); cursor: pointer; transition: background-color .2s ease; }
+.wb-switch input::after { content: ""; position: absolute; top: 2px; left: 2px; width: 22px; height: 22px; border-radius: 50%; background: #ffffff; box-shadow: 0 1px 3px rgb(0 0 0 / 25%); transition: transform .2s ease; }
+.wb-switch input:checked { background: var(--wb-success); }
+.wb-switch input:checked::after { transform: translateX(18px); }
+.wb-switch small { display: block; color: var(--wb-muted); font-size: 13px; }
+
+/* Panes: input and result side by side on desktop, stacked on phones. */
+.wb-panes { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px; }
+.wb-pane { display: flex; flex-direction: column; min-width: 0; border: 1px solid var(--wb-line); border-radius: var(--wb-radius); background: var(--wb-surface); box-shadow: var(--wb-shadow); overflow: hidden; }
+.wb-pane[data-invalid="true"] { border-color: var(--wb-danger); }
+/* The textarea drops its own outline, so the pane carries the 3px ring, also when the input is invalid. */
+.wb-pane:has(textarea:focus-visible) { outline: 3px solid var(--wb-focus); outline-offset: 2px; }
+.wb-pane-head { display: flex; align-items: center; justify-content: space-between; gap: 12px; min-height: 52px; padding: 4px 8px 4px 16px; border-bottom: 1px solid var(--wb-line); }
+.wb-pane-head label, .wb-pane-head h2 { margin: 0; font-size: 15px; font-weight: 600; }
+.wb-pane textarea { flex: 1; width: 100%; min-height: 220px; margin: 0; padding: 16px; border: 0; background: transparent; font-family: var(--wb-mono); font-size: 15px; line-height: 1.6; resize: vertical; overflow-wrap: anywhere; }
+.wb-pane textarea:focus-visible { outline: none; }
+.wb-pane textarea::placeholder { color: var(--wb-muted); }
+.wb-pane-meta { margin: 0; padding: 10px 16px; border-top: 1px solid var(--wb-line); color: var(--wb-muted); font-size: 13px; font-variant-numeric: tabular-nums; }
+.wb-error { display: flex; gap: 8px; margin: 0; padding: 10px 16px; border-top: 1px solid var(--wb-line); color: var(--wb-danger); font-size: 14px; line-height: 1.5; }
+.wb-error svg { width: 18px; height: 18px; flex: none; margin-top: 2px; }
+
+/* Buttons. One filled button per screen; everything else is plain. */
+.wb-actions { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin-top: 16px; }
+.wb-button { display: inline-flex; align-items: center; justify-content: center; gap: 6px; min-height: 44px; padding: 0 20px; border: 0; border-radius: 980px; background: var(--wb-button); color: var(--wb-button-fg); font-size: 15px; font-weight: 600; cursor: pointer; transition: background-color .2s ease, transform .1s ease; }
+.wb-button:hover:not(:disabled) { background: var(--wb-button-hover); }
+.wb-button:active:not(:disabled) { transform: scale(.98); }
+.wb-button-plain { display: inline-flex; align-items: center; justify-content: center; gap: 6px; min-height: 44px; padding: 0 14px; border: 0; border-radius: 980px; background: transparent; color: var(--wb-accent); font-size: 15px; font-weight: 500; cursor: pointer; }
+.wb-button-plain:hover:not(:disabled) { background: var(--wb-track); }
+.wb-button:disabled, .wb-button-plain:disabled { cursor: not-allowed; opacity: .4; }
+.wb-button svg, .wb-button-plain svg { width: 18px; height: 18px; flex: none; }
+.wb-pane-tools { display: flex; align-items: center; gap: 4px; }
+.wb-pane-head .wb-button-plain { padding: 0 12px; }
+.wb-pane-head .wb-button { padding: 0 16px; }
+
+.wb-hint { margin: 16px 0 0; color: var(--wb-muted); font-size: 14px; line-height: 1.5; }
+.wb-sr { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
+
+@media (max-width: 720px) {
+  .wb-panes { grid-template-columns: 1fr; }
+  .wb-pane textarea { min-height: 120px; }
+  .wb-controls { align-items: stretch; flex-direction: column; }
+  .wb-segmented { width: 100%; }
+  .wb-segmented button { min-width: 0; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .wb *, .wb *::before, .wb *::after { transition: none !important; }
+}
+
+/* Added with /url-encoder and /hashgen (2026-11-13). */
+.wb-control-group { display: flex; flex-wrap: wrap; gap: 12px; }
+.wb-hint-top { margin: -4px 0 16px; }
+.wb-error-inline { padding: 0; border: 0; margin-top: 12px; }
+.wb-table-wrap { margin-top: 12px; border: 1px solid var(--wb-line); border-radius: var(--wb-radius); background: var(--wb-surface); box-shadow: var(--wb-shadow); overflow-x: auto; }
+.wb-table { width: 100%; border-collapse: collapse; font-size: 15px; }
+.wb-table caption { padding: 14px 16px 6px; color: var(--wb-muted); font-size: 14px; text-align: left; }
+.wb-table th, .wb-table td { padding: 10px 16px; border-top: 1px solid var(--wb-line); text-align: left; vertical-align: top; font-family: var(--wb-mono); overflow-wrap: anywhere; }
+.wb-table thead th { font-family: var(--wb-font); font-size: 13px; font-weight: 600; color: var(--wb-muted); }
+.wb-table tbody th { width: 32%; font-weight: 600; }
+.wb-table em { color: var(--wb-muted); }
+.wb-options { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 8px; margin: 0 0 16px; padding: 0; border: 0; }
+.wb-options legend { margin-bottom: 8px; font-size: 15px; font-weight: 600; }
+.wb-option { position: relative; display: flex; flex-direction: column; justify-content: center; min-height: 56px; padding: 8px 16px; border: 1px solid var(--wb-line); border-radius: 14px; background: var(--wb-surface); cursor: pointer; }
+.wb-option input { position: absolute; opacity: 0; pointer-events: none; }
+.wb-option strong { font-size: 15px; font-weight: 600; }
+.wb-option span { color: var(--wb-muted); font-size: 13px; }
+.wb-option:has(input:checked) { border-color: var(--wb-accent); box-shadow: inset 0 0 0 1px var(--wb-accent); }
+.wb-option:has(input:focus-visible) { outline: 3px solid var(--wb-focus); outline-offset: 2px; }
+.wb-digest { flex: 1; min-height: 120px; margin: 0; padding: 16px; font-family: var(--wb-mono); font-size: 15px; line-height: 1.6; overflow-wrap: anywhere; word-break: break-all; user-select: all; }
+.wb-digest[data-empty="true"] { color: var(--wb-muted); user-select: none; }
+@media (max-width: 720px) {
+  .wb-control-group { flex-direction: column; }
+  .wb-control-group .wb-segmented { width: 100%; }
+  .wb-options { grid-template-columns: 1fr 1fr; }
+}

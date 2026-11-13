@@ -21,19 +21,19 @@ A developer who needs a quick, private, in-browser utility, and a portfolio visi
 | Route | Does | Does not |
 |---|---|---|
 | `/` | Catalogue of the 17 tools with name, one-line description and route. | — |
-| `/base64` | Encode text to Base64 or decode it back on button click; UTF-8 safe; optional URL-safe output (no padding); decoding accepts standard or URL-safe input and ignores line breaks; character/byte counts; swap and copy. | No file-to-Base64, no real-time conversion, no Web Worker. |
+| `/base64` | Encode text to Base64 or decode it back as you type (live result); UTF-8 safe; optional URL-safe output (no padding); decoding accepts standard or URL-safe input and ignores spaces and line breaks; character/byte counts; swap and copy. First tool on the Workbench shell (`WORKBENCH.md`). | No file-to-Base64, no Web Worker. |
 | `/color-palettes` | Six fixed preset palettes labelled static sample; copy one colour, the whole palette, or CSS variables / Tailwind / JSON tokens. | No contrast or WCAG check, no palette generation, no UI-pattern previews. |
 | `/colorpicker` | Pick a colour and read/copy it as HEX, RGB and HSL (with clamping and round-trip conversion). | No OKLCH, contrast checker, colour-blindness simulation or palette generation. |
 | `/cron` | Edit a standard 5-field cron expression or choose a preset; get a plain-English sentence and an estimated list of the next 5 run times in local time. | No visual builder, full validation, shareable URLs or non-standard fields. |
 | `/date-calculator` | Difference between two dates and add/subtract days, weeks or months, on a fixed Asia/Bangkok calendar. | No working days, holidays or time-zone conversion. |
 | `/diffchecker` | Line-by-line comparison (one LCS algorithm) marking added and removed lines; swap and clear. | No character/word modes, other algorithms or sharing. |
-| `/hashgen` | SHA-1, SHA-256, SHA-384 or SHA-512 of the entered text via Web Crypto; copy the digest. | No MD5, bcrypt, file hashing or batch comparison. |
+| `/hashgen` | SHA-1, SHA-256, SHA-384 or SHA-512 of the entered text via Web Crypto, recomputed as you type; copy the digest. On the Workbench shell. | No MD5, bcrypt, file hashing or batch comparison. |
 | `/jsonconverter` | Pretty-print or minify JSON, and convert JSON ↔ YAML (js-yaml); errors are shown; copy output. | No tree view, syntax highlighting, CSV or XML. |
 | `/markdown-editor` | Split-pane editor with a live preview from a small built-in renderer (escaped HTML, safe links only); reset sample; copy source. | No syntax highlighting, themes, or export to HTML/PDF/MDX. |
 | `/minifier` | Shrink CSS, HTML or JS with regex replacements and JSON through `JSON.parse`; size savings; copy. It says it is not a production compiler. | No real parser-based minification, source maps or mangling. |
 | `/number-converter` | Four synced inputs (binary, octal, decimal, hexadecimal) using BigInt, so large integers convert exactly; invalid input is flagged. | No bit visualisation or signed/unsigned representations. |
 | `/regex` | Live JavaScript RegExp tester with flag toggles, highlighted matches and capture groups, on the main thread. | No pattern library or Web Worker execution. |
-| `/url-encoder` | `encodeURIComponent` / `decodeURIComponent` / `encodeURI` / `decodeURI`, swap-and-reverse, and a `URLSearchParams` query inspector. | No query builder, batch mode, full URL parsing or double-encoding handling. |
+| `/url-encoder` | `encodeURIComponent` / `decodeURIComponent` / `encodeURI` / `decodeURI` (chosen as Encode/Decode × Query value/Full URL), live result, swap-and-reverse, and a `URLSearchParams` query inspector. On the Workbench shell. | No query builder, batch mode, full URL parsing or double-encoding handling. |
 | `/engineering-calc` | Illustrative simply-supported beam check: three load cases (uniform M = wL²/8, mid-span point M = PL/4, service), kN or kgf, input bounds and the formula shown. | Not an engineering design tool; no codes, materials or deflection. |
 | `/latency-test` | Ping one URL you enter (or a preset) with `fetch`, with a timeout; keeps the last 12 runs for this tab with average, median, min and max. | No multi-region probes, world map or history across sessions. |
 | `/clipboard-manager` | File text snippets by hand (or read the clipboard on request), search, pin, copy and delete; stored in `localStorage` (`devtools-suite:clipboard-manager:` keys). | No passive clipboard listening, categories or syntax-aware formatting. |
