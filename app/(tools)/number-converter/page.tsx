@@ -1,74 +1,73 @@
 "use client";
 
 import { useState } from "react";
+import { AlertIcon, CheckIcon, CopyIcon, ToolIntro, useCopy, Workbench } from "@/components/workbench";
 import { parseInteger } from "@/lib/number-converter/conversion";
 
 type Base = "bin" | "oct" | "dec" | "hex";
-const RADIX: Record<Base, number> = { bin: 2, oct: 8, dec: 10, hex: 16 };
-const LABELS: Record<Base, { name: string; prefix: string; hint: string }> = {
-  bin: { name: "Binary", prefix: "0b", hint: "two symbols / 0 and 1" },
-  oct: { name: "Octal", prefix: "0o", hint: "eight symbols / 0 to 7" },
-  dec: { name: "Decimal", prefix: "10", hint: "the everyday baseline" },
-  hex: { name: "Hexadecimal", prefix: "0x", hint: "sixteen symbols / 0 to f" },
-};
-const BASES: Base[] = ["bin", "oct", "dec", "hex"];
+const BASES: { base: Base; radix: number; name: string; hint: string }[] = [
+  { base: "dec", radix: 10, name: "Decimal", hint: "Base 10" },
+  { base: "hex", radix: 16, name: "Hexadecimal", hint: "Base 16, 0–9 a–f" },
+  { base: "bin", radix: 2, name: "Binary", hint: "Base 2, 0 and 1" },
+  { base: "oct", radix: 8, name: "Octal", hint: "Base 8, 0–7" },
+];
+const EMPTY: Record<Base, string> = { bin: "", oct: "", dec: "", hex: "" };
 
-async function copyText(text: string) {
-  try { await navigator.clipboard.writeText(text); return true; } catch { return false; }
+function fromInteger(number: bigint): Record<Base, string> {
+  return { bin: number.toString(2), oct: number.toString(8), dec: number.toString(10), hex: number.toString(16) };
 }
 
+export default function NumberConverterTool() {
+  const [values, setValues] = useState<Record<Base, string>>(fromInteger(BigInt(10)));
+  const [error, setError] = useState<{ base: Base; message: string } | null>(null);
+  const [copiedBase, setCopiedBase] = useState<Base | null>(null);
+  const [announcement, setAnnouncement] = useState("");
+  const { copied, copy } = useCopy(copiedBase ? values[copiedBase] : "", (ok) =>
+    setAnnouncement(ok ? "Value copied to the clipboard." : "Copy was blocked. Select the value and copy it by hand."));
 
-export default function Home() {
-  const [values, setValues] = useState<Record<Base, string>>({ bin: "1010", oct: "12", dec: "10", hex: "a" });
-  const [error, setError] = useState("");
-  const [copied, setCopied] = useState<Base | null>(null);
-
-  const updateFrom = (base: Base, raw: string) => {
-    if (!raw.trim()) { setValues({ bin: "", oct: "", dec: "", hex: "" }); setError(""); return; }
+  const updateFrom = (base: Base, radix: number, raw: string) => {
+    if (!raw.trim()) { setValues(EMPTY); setError(null); return; }
     try {
-      const number = parseInteger(raw, RADIX[base]);
-      setValues({ bin: number.toString(2), oct: number.toString(8), dec: number.toString(10), hex: number.toString(16) });
-      setError("");
+      setValues(fromInteger(parseInteger(raw, radix)));
+      setError(null);
     } catch (cause) {
+      // Keep what was typed in this field; the other fields still show the last valid number.
       setValues((current) => ({ ...current, [base]: raw }));
-      setError(cause instanceof Error ? cause.message : "This value cannot be converted.");
+      setError({ base, message: cause instanceof Error ? cause.message : "This value cannot be converted." });
     }
   };
 
   return (
-    <main className="radix-shell">
-      <div className="radix-frame">
-        <header className="radix-topbar">
-          <a href="https://bookchaowalit.com" className="radix-mark" aria-label="Bookchaowalit home"><span>BASE</span> / 4</a>
-          <span>INTEGER INSTRUMENT</span>
-          <span>BIGINT / LOCAL</span>
-        </header>
+    <Workbench>
+      <ToolIntro title="Number Base Converter" summary="Type a whole number in any field and the other three follow. Works with very large and negative integers." />
 
-        <section className="radix-intro">
-          <div>
-            <h1>See the same number<br /><em>in four voices.</em></h1>
-            <p>Type into any register. The other three follow, so place value becomes something you can see and check.</p>
-          </div>
-          <div className="radix-signal" aria-hidden="true"><span>0b</span><span>0o</span><b>10</b><span>0x</span></div>
-        </section>
-
-        <section className="converter-board" aria-label="Number base converter">
-          <div className="board-head"><span>FOUR REGISTERS / ONE INTEGER</span><span>NO FLOATING POINT</span></div>
-          <div className="registers">
-            {BASES.map((base) => (
-              <div className={`register register-${base}`} key={base}>
-                <div className="register-label"><span className="register-prefix">{LABELS[base].prefix}</span><span>{LABELS[base].name}</span></div>
-                <label><span className="sr-only">{LABELS[base].name} value</span><input value={values[base]} onChange={(event) => updateFrom(base, event.target.value)} spellCheck={false} inputMode={base === "dec" ? "numeric" : "text"} /></label>
-                <div className="register-foot"><span>{LABELS[base].hint}</span><button type="button" onClick={async () => { if (await copyText(values[base])) { setCopied(base); setTimeout(() => setCopied(null), 1500); } }}>{copied === base ? "copied" : "copy value"}</button></div>
-              </div>
-            ))}
-          </div>
-          {error ? <p className="radix-error" role="alert">Register error: {error}</p> : null}
-          <div className="board-foot"><span>EDIT ANY REGISTER</span><span>INTEGER ONLY / NO API / NO HISTORY</span></div>
-        </section>
-
-        <footer className="radix-footer"><span>BOOK / DEV TOOLS</span><span>THE RELATIONSHIP IS THE RESULT</span></footer>
+      <div className="wb-fields">
+        {BASES.map(({ base, radix, name, hint }) => {
+          const invalid = error?.base === base;
+          return (
+            <div className="wb-field" key={base} data-invalid={invalid ? "true" : undefined}>
+              <label htmlFor={`n-${base}`}>{name}<small>{hint}</small></label>
+              <input
+                id={`n-${base}`}
+                value={values[base]}
+                onChange={(event) => updateFrom(base, radix, event.target.value)}
+                inputMode={base === "dec" ? "numeric" : "text"}
+                spellCheck={false}
+                autoComplete="off"
+                aria-invalid={invalid ? true : undefined}
+                aria-describedby={invalid ? "n-error" : undefined}
+              />
+              <button type="button" className="wb-button-plain" disabled={!values[base] || invalid} onClick={() => { setCopiedBase(base); void copy(values[base]); }} aria-label={`Copy ${name.toLowerCase()} value`}>
+                {copied && copiedBase === base ? <><CheckIcon />Copied</> : <><CopyIcon />Copy</>}
+              </button>
+            </div>
+          );
+        })}
+        {error ? <p id="n-error" className="wb-error" role="alert"><AlertIcon />{error.message}</p> : null}
       </div>
-    </main>
+      <p className="wb-sr" role="status" aria-live="polite">{announcement}</p>
+
+      <p className="wb-hint">Integers only. A leading - makes the number negative; hexadecimal also accepts a 0x prefix.</p>
+    </Workbench>
   );
 }

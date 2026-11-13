@@ -55,8 +55,9 @@ export type SegmentOption<T extends string> = { value: T; label: string };
 
 /** Apple-style segmented control for a small set of exclusive modes. */
 export function Segmented<T extends string>({ label, options, value, onChange }: { label: string; options: readonly SegmentOption<T>[]; value: T; onChange: (next: T) => void }) {
+  // Four or more segments wrap to a 2×2 grid on phones (.wb-segmented-4).
   return (
-    <div className="wb-segmented" role="group" aria-label={label}>
+    <div className={options.length >= 4 ? "wb-segmented wb-segmented-4" : "wb-segmented"} role="group" aria-label={label}>
       {options.map((option) => (
         <button key={option.value} type="button" aria-pressed={value === option.value} onClick={() => onChange(option.value)}>
           {option.label}

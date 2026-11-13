@@ -141,3 +141,22 @@
   .wb-control-group .wb-segmented { width: 100%; }
   .wb-options { grid-template-columns: 1fr 1fr; }
 }
+
+/* Added with /number-converter, /jsonconverter and /minifier (2026-11-13). */
+.wb-fields { border: 1px solid var(--wb-line); border-radius: var(--wb-radius); background: var(--wb-surface); box-shadow: var(--wb-shadow); overflow: hidden; }
+.wb-field { display: grid; grid-template-columns: minmax(140px, 200px) minmax(0, 1fr) auto; align-items: center; gap: 12px; padding: 8px 8px 8px 16px; }
+.wb-field + .wb-field { border-top: 1px solid var(--wb-line); }
+.wb-field label { font-size: 15px; font-weight: 600; }
+.wb-field label small { display: block; color: var(--wb-muted); font-size: 13px; font-weight: 400; }
+.wb-field input { width: 100%; min-height: 44px; padding: 0 12px; border: 1px solid transparent; border-radius: var(--wb-radius-sm); background: var(--wb-bg); font-family: var(--wb-mono); font-size: 17px; }
+.wb-field input:focus-visible { outline: 3px solid var(--wb-focus); outline-offset: 0; }
+.wb-field[data-invalid="true"] input { border-color: var(--wb-danger); }
+.wb-segmented-4 { grid-auto-columns: minmax(0, 1fr); }
+.wb-segmented-4 button { min-width: 0; padding: 0 14px; }
+.wb-stats { display: flex; flex-wrap: wrap; gap: 4px 16px; }
+.wb-stats strong { color: var(--wb-success); font-weight: 600; }
+@media (max-width: 720px) {
+  .wb-field { grid-template-columns: minmax(0, 1fr) auto; padding: 12px 8px 12px 16px; }
+  .wb-field label { grid-column: 1 / -1; }
+  .wb-segmented-4 { grid-auto-flow: row; grid-template-columns: 1fr 1fr; }
+}
