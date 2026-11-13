@@ -35,9 +35,11 @@ export default function ColorPickerTool() {
   const typeHex = (raw: string) => {
     const value = raw.trim();
     if (!/^#?[0-9a-fA-F]{0,6}$/.test(value)) return;
+    // Keep exactly what was typed until the field loses focus: "#4f4" is valid, but it may be the
+    // start of "#4f46e5", so expanding it to "#44FF44" mid-typing would corrupt the next keystrokes.
+    setHexDraft(value);
     const parsed = hexToRgb(value);
-    if (parsed) { setColor(rgbToHex(parsed.r, parsed.g, parsed.b)); setHexDraft(null); }
-    else setHexDraft(value);
+    if (parsed) setColor(rgbToHex(parsed.r, parsed.g, parsed.b));
   };
   const setChannel = (channel: Channel, raw: string) => {
     const next = { ...rgb, [channel]: clamp(Math.round(Number(raw) || 0), 0, 255) };
