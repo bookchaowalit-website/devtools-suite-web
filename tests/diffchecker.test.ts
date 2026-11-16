@@ -7,7 +7,7 @@ test("identical and empty texts retain their shared lines", () => {
     { type: "equal", line: "a", left: 1, right: 1 },
     { type: "equal", line: "b", left: 2, right: 2 },
   ]);
-  assert.deepEqual(lineDiff("", ""), [{ type: "equal", line: "", left: 1, right: 1 }]);
+  assert.deepEqual(lineDiff("", ""), []);
 });
 test("insertions and deletions keep each side's original line numbers", () => {
   assert.deepEqual(lineDiff("a\nc", "a\nb\nc"), [
@@ -23,6 +23,7 @@ test("insertions and deletions keep each side's original line numbers", () => {
 test("replacements and repeated lines follow the longest common subsequence", () => {
   assert.deepEqual(lineDiff("a\na\nb", "a\nb\nb").map(op => op.type), ["equal", "del", "equal", "add"]);
   assert.deepEqual(lineDiff("old", "new").map(op => op.type), ["del", "add"]);
-  assert.deepEqual(lineDiff("", "new").map(op => op.type), ["del", "add"]);
-  assert.deepEqual(lineDiff("old", "").map(op => op.type), ["del", "add"]);
+  assert.deepEqual(lineDiff("", "new"), [{ type: "add", line: "new", left: null, right: 1 }]);
+  assert.deepEqual(lineDiff("old", ""), [{ type: "del", line: "old", left: 1, right: null }]);
+  assert.deepEqual(lineDiff("a\n", "a").map(op => op.type), ["equal", "del"]);
 });

@@ -236,6 +236,11 @@
 .wb-cron-fields li { display: grid; gap: 2px; padding: 8px 10px; border-radius: 10px; background: var(--wb-bg); text-align: center; }
 .wb-cron-fields code { font-family: var(--wb-mono); font-size: 17px; font-weight: 600; overflow-wrap: anywhere; }
 .wb-cron-fields span { color: var(--wb-muted); font-size: 13px; }
+.wb-cron-fields li[data-invalid="true"] { box-shadow: inset 0 0 0 2px var(--wb-danger); }
+.wb-cron-fields li[data-invalid="true"] span { color: var(--wb-danger); }
+.wb-expression-label { display: block; margin: 0 0 8px; font-size: 15px; font-weight: 600; }
+/* Five columns are too narrow for "weekday" below ~420px, so small phones use rows of three. */
+@media (max-width: 420px) { .wb-cron-fields { grid-template-columns: repeat(3, minmax(0, 1fr)); } }
 .wb-chips { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 16px; }
 .wb-chips button { min-height: 44px; padding: 0 16px; border: 1px solid var(--wb-field-line); border-radius: 980px; background: var(--wb-surface); font-size: 15px; cursor: pointer; }
 .wb-chips button:hover { background: var(--wb-track); }
@@ -345,3 +350,16 @@
 .wb-table thead th { white-space: nowrap; }
 @media (max-width: 720px) { .wb-table th, .wb-table td { padding: 8px 10px; } }
 .wb-formulas { display: flex; flex-wrap: wrap; gap: 4px 24px; }
+
+/* Added with the 2026-11-16 UX follow-ups. */
+/* A failed result is never colour alone: danger text, an alert icon and the word "Failed". */
+.wb-failed { display: inline-flex; align-items: center; gap: 6px; color: var(--wb-danger); }
+.wb-failed svg { width: 18px; height: 18px; flex: none; }
+.wb-figures .wb-failed svg { width: .75em; height: .75em; }
+/* Number converter: while one field is invalid the others keep the last valid number, shown muted. */
+.wb-field[data-stale="true"] input { color: var(--wb-muted); font-style: italic; }
+.wb-empty-actions { display: grid; gap: 4px; justify-items: start; }
+.wb-empty-actions .wb-note { margin: 4px 8px 0; }
+/* Regex on phones: the match count and highlighted text come before the test-text editor, so a 375×812
+   screen shows the result without scrolling. The result pane has no controls, so tab order is unchanged. */
+@media (max-width: 720px) { .wb-panes-result-first > :last-child { order: -1; } }

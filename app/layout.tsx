@@ -37,7 +37,7 @@ export default function RootLayout({ children }: Readonly<{ children: React.Reac
         <header className="suite-header">
           <Link href="/" className="suite-brand">{SUITE_NAME}</Link>
           <nav aria-label="Suite">
-            <Link href="/">All tools</Link>
+            <Link href="/" className="suite-home">All tools</Link>
             <a href="https://bookchaowalit.com/" className="suite-hub">Bookchaowalit</a>
           </nav>
         </header>

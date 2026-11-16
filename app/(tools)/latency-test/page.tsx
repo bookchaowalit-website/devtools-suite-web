@@ -58,7 +58,7 @@ export default function LatencyTool() {
       </section>
 
       <dl className="wb-figures" aria-live="polite">
-        <div><dt>Last</dt><dd>{latest ? (latest.ok ? `${latest.ms} ms` : "Failed") : "—"}</dd></div>
+        <div><dt>Last</dt><dd>{latest ? (latest.ok ? `${latest.ms} ms` : <span className="wb-failed"><AlertIcon />Failed</span>) : "—"}</dd></div>
         <div><dt>Average</dt><dd>{summary.ok ? `${summary.average} ms` : "—"}</dd></div>
         <div><dt>Median</dt><dd>{summary.ok > 1 ? `${summary.median} ms` : "—"}</dd></div>
         <div><dt>Min – max</dt><dd>{summary.ok > 1 ? `${summary.min}–${summary.max}` : "—"}</dd></div>
@@ -70,7 +70,7 @@ export default function LatencyTool() {
           <ol className="wb-list wb-log">
             {runs.map((run, index) => (
               <li key={`${run.at}-${index}`}>
-                <strong>{run.ok ? `${run.ms} ms` : "Failed"}</strong>
+                <strong>{run.ok ? `${run.ms} ms` : <span className="wb-failed"><AlertIcon />Failed</span>}</strong>
                 <span>{run.target}</span>
                 <span className="wb-muted">{run.ok ? "" : `after ${run.ms} ms · `}{new Date(run.at).toLocaleTimeString()}</span>
               </li>

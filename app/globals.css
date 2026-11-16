@@ -19,7 +19,13 @@ a:focus-visible, button:focus-visible, input:focus-visible, textarea:focus-visib
 .suite-header nav a { display: inline-flex; align-items: center; min-height: 44px; padding: 0 12px; border-radius: 980px; color: var(--wb-accent); font-size: 15px; text-decoration: none; }
 .suite-header nav a:hover { background: var(--wb-track); }
 .suite-header nav a { white-space: nowrap; }
-@media (max-width: 480px) { .suite-header nav .suite-hub { display: none; } }
+/* Phones: the brand already links home, so "All tools" gives way and the hub link stays visible. */
+@media (max-width: 480px) {
+  .suite-header { gap: 4px; }
+  .suite-header nav .suite-home { display: none; }
+  .suite-header nav a { padding: 0 8px; font-size: 14px; }
+}
+@media (max-width: 359px) { .suite-brand { font-size: 16px; } }
 .suite-footer { border-top: 1px solid var(--wb-line); padding: 12px clamp(16px, 4vw, 32px); background: var(--wb-bg); }
 .suite-footer nav { display: flex; flex-wrap: wrap; gap: 0 20px; max-width: 1016px; margin: 0 auto; }
 .suite-footer a { display: inline-flex; align-items: center; min-height: 44px; color: var(--wb-muted); font-size: 14px; text-decoration: none; }
@@ -35,6 +41,17 @@ a:focus-visible, button:focus-visible, input:focus-visible, textarea:focus-visib
 .catalog-card h2 { margin: 0 0 6px; font-size: 19px; font-weight: 600; letter-spacing: -.01em; color: var(--wb-fg); }
 .catalog-card p { margin: 0 0 14px; color: var(--wb-muted); font-size: 15px; line-height: 1.5; }
 .catalog-card code { margin-top: auto; font-family: var(--wb-mono); font-size: 13px; color: var(--wb-accent); overflow-wrap: anywhere; }
+/* Search: a visible label, the shell's pill field (.wb-search look) and a live count. */
+.catalog-search { display: flex; flex-wrap: wrap; align-items: flex-end; gap: 8px 16px; margin: 0 0 24px; }
+.catalog-search label { flex-basis: 100%; font-size: 15px; font-weight: 600; }
+.catalog-search input { width: min(360px, 100%); min-height: 44px; padding: 0 16px; border: 1px solid var(--wb-field-line); border-radius: 980px; background: var(--wb-surface); color: var(--wb-fg); font: inherit; font-size: 17px; }
+.catalog-search input::placeholder { color: var(--wb-muted); opacity: 1; }
+.catalog-search input:focus-visible { outline: 3px solid var(--wb-focus); outline-offset: 0; }
+.catalog-count { margin: 0; align-self: center; color: var(--wb-muted); font-size: 14px; font-variant-numeric: tabular-nums; }
+.catalog-empty { padding: 24px 20px; border: 1px solid var(--wb-line); border-radius: var(--wb-radius); background: var(--wb-surface); }
+.catalog-empty p { margin: 0 0 8px; color: var(--wb-fg); font-size: 17px; line-height: 1.5; overflow-wrap: anywhere; }
+.catalog-clear { display: inline-flex; align-items: center; min-height: 44px; margin-left: -14px; padding: 0 14px; border: 0; border-radius: 980px; background: transparent; color: var(--wb-accent); font: inherit; font-size: 15px; font-weight: 500; cursor: pointer; }
+.catalog-clear:hover { background: var(--wb-track); }
 @media (prefers-reduced-motion: reduce) { .catalog-card { transition: none; } .catalog-card:hover { transform: none; } }
 
 /* Design floor: no text under 12px (interface-coverage wave 3). small inherits a relative size. */

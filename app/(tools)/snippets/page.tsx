@@ -14,6 +14,7 @@ export default function SnippetsTool() {
   const visible = useMemo(() => filterSnippets(SNIPPETS, query, category), [category, query]);
   // Only show a snippet that is still in the filtered list; fall back to the first match.
   const selected = visible.find((snippet) => snippet.id === selectedId) ?? visible[0] ?? null;
+  const reset = () => { setQuery(""); setCategory("All"); setAnnouncement(`Search cleared. Showing all ${SNIPPETS.length} snippets.`); };
   const { copied, copy } = useCopy(selected?.code ?? "", (ok) => setAnnouncement(ok ? "Code copied to the clipboard." : "Copy was blocked. Select the code and copy it by hand."));
 
   return (
@@ -43,7 +44,10 @@ export default function SnippetsTool() {
               ))}
             </ul>
           ) : (
-            <p className="wb-note">No snippet matches. Try another word or choose All.</p>
+            <div className="wb-empty-actions">
+              <p className="wb-note">No snippet matches{query.trim() ? ` “${query.trim()}”` : ""}{category !== "All" ? ` in ${category}` : ""}.</p>
+              <button type="button" className="wb-button-plain" onClick={reset}>Clear search</button>
+            </div>
           )}
         </nav>
 

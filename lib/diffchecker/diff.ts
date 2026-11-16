@@ -1,6 +1,8 @@
 export type Op = { type: "equal" | "add" | "del"; line: string; left: number | null; right: number | null };
+/** Splits into lines; an empty text has no lines (not one empty line). */
+export const toLines = (text: string): string[] => (text === "" ? [] : text.split("\n"));
 export function lineDiff(left: string, right: string): Op[] {
-  const a = left.split("\n"); const b = right.split("\n");
+  const a = toLines(left); const b = toLines(right);
   const dp = Array.from({ length: a.length + 1 }, () => Array<number>(b.length + 1).fill(0));
   for (let i = a.length - 1; i >= 0; i--) for (let j = b.length - 1; j >= 0; j--) dp[i][j] = a[i] === b[j] ? dp[i + 1][j + 1] + 1 : Math.max(dp[i + 1][j], dp[i][j + 1]);
   const ops: Op[] = []; let i = 0; let j = 0; let leftNo = 1; let rightNo = 1;

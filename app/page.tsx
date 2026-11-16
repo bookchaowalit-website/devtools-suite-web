@@ -1,6 +1,8 @@
-import Link from "next/link";
+import { ToolCatalog } from "@/components/tool-catalog";
 import { SUITE_NAME } from "@/lib/site";
 import { TOOLS, toolPath } from "@/lib/tools";
+
+const ENTRIES = TOOLS.map(({ slug, name, description }) => ({ slug, name, description, path: toolPath({ slug }) }));
 
 export default function Catalog() {
   return (
@@ -9,17 +11,7 @@ export default function Catalog() {
       <p className="catalog-lede">
         {TOOLS.length} developer tools in one place. Every tool runs in your browser; nothing you type is uploaded.
       </p>
-      <ul className="catalog-grid" aria-label="Tools">
-        {TOOLS.map((tool) => (
-          <li key={tool.slug}>
-            <Link href={toolPath(tool)} className="catalog-card">
-              <h2>{tool.name}</h2>
-              <p>{tool.description}</p>
-              <code>{toolPath(tool)}</code>
-            </Link>
-          </li>
-        ))}
-      </ul>
+      <ToolCatalog tools={ENTRIES} />
     </div>
   );
 }

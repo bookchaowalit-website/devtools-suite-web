@@ -43,7 +43,7 @@ export default function RegexTool() {
       </section>
       <p className="wb-sr" role="status" aria-live="polite">{announcement}</p>
 
-      <div className="wb-panes wb-panes-gap">
+      <div className="wb-panes wb-panes-gap wb-panes-result-first">
         <section className="wb-pane">
           <div className="wb-pane-head">
             <label htmlFor="regex-text">Test text</label>

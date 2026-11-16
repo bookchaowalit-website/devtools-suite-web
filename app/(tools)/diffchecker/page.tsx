@@ -44,13 +44,15 @@ export default function DiffCheckerTool() {
       <section className="wb-diff" aria-labelledby="diff-title">
         <div className="wb-diff-head">
           <h2 id="diff-title">Differences</h2>
-          <p className="wb-diff-stats">
-            <span className="is-added">+{added} added</span>
-            <span className="is-removed">−{removed} removed</span>
-            <span>{same} unchanged</span>
-          </p>
+          {ops.length ? (
+            <p className="wb-diff-stats">
+              <span className="is-added">+{added} added</span>
+              <span className="is-removed">−{removed} removed</span>
+              <span>{same} unchanged</span>
+            </p>
+          ) : null}
         </div>
-        {ops.length === 0 || (!left && !right) ? (
+        {ops.length === 0 ? (
           <p className="wb-note wb-diff-empty">Paste text into both boxes to compare them.</p>
         ) : added === 0 && removed === 0 ? (
           <p className="wb-note wb-diff-empty">The two texts are identical.</p>
