@@ -12,3 +12,11 @@ describe("cron next runs", () => {
     expect(html).toContain('class="wb"');
   });
 });
+
+describe("cron expression label", () => {
+  it("is visible, not screen-reader only", () => {
+    const html = renderToString(<CronPage />);
+    expect(html).toMatch(/<label id="cron-label" for="cron-expr" class="wb-expression-label">Cron expression/);
+    expect(html).not.toMatch(/class="wb-sr"[^>]*>Cron expression/);
+  });
+});
