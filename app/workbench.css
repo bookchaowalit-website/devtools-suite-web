@@ -350,3 +350,9 @@
 .wb-table thead th { white-space: nowrap; }
 @media (max-width: 720px) { .wb-table th, .wb-table td { padding: 8px 10px; } }
 .wb-formulas { display: flex; flex-wrap: wrap; gap: 4px 24px; }
+
+/* Added with the 2026-11-16 UX follow-ups. */
+/* A failed result is never colour alone: danger text, an alert icon and the word "Failed". */
+.wb-failed { display: inline-flex; align-items: center; gap: 6px; color: var(--wb-danger); }
+.wb-failed svg { width: 18px; height: 18px; flex: none; }
+.wb-figures .wb-failed svg { width: .75em; height: .75em; }
