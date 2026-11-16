@@ -13,6 +13,8 @@ const BASES: { base: Base; radix: number; name: string; hint: string }[] = [
 ];
 const EMPTY: Record<Base, string> = { bin: "", oct: "", dec: "", hex: "" };
 
+const nameOf = (base: Base) => BASES.find((entry) => entry.base === base)?.name ?? base;
+
 function fromInteger(number: bigint): Record<Base, string> {
   return { bin: number.toString(2), oct: number.toString(8), dec: number.toString(10), hex: number.toString(16) };
 }
@@ -44,8 +46,10 @@ export default function NumberConverterTool() {
       <div className="wb-fields">
         {BASES.map(({ base, radix, name, hint }) => {
           const invalid = error?.base === base;
+          // While another field is invalid this one still holds the last valid number: show it muted.
+          const stale = Boolean(error) && !invalid;
           return (
-            <div className="wb-field" key={base} data-invalid={invalid ? "true" : undefined}>
+            <div className="wb-field" key={base} data-invalid={invalid ? "true" : undefined} data-stale={stale ? "true" : undefined}>
               <label htmlFor={`n-${base}`}>{name}<small>{hint}</small></label>
               <input
                 id={`n-${base}`}
@@ -55,15 +59,20 @@ export default function NumberConverterTool() {
                 spellCheck={false}
                 autoComplete="off"
                 aria-invalid={invalid ? true : undefined}
-                aria-describedby={invalid ? "n-error" : undefined}
+                aria-describedby={invalid || stale ? "n-error" : undefined}
               />
-              <button type="button" className="wb-button-plain" disabled={!values[base] || invalid} onClick={() => { setCopiedBase(base); void copy(values[base]); }} aria-label={`Copy ${name.toLowerCase()} value`}>
+              <button type="button" className="wb-button-plain" disabled={!values[base] || Boolean(error)} onClick={() => { setCopiedBase(base); void copy(values[base]); }} aria-label={`Copy ${name.toLowerCase()} value`}>
                 {copied && copiedBase === base ? <><CheckIcon />Copied</> : <><CopyIcon />Copy</>}
               </button>
             </div>
           );
         })}
-        {error ? <p id="n-error" className="wb-error" role="alert"><AlertIcon />{error.message}</p> : null}
+        {error ? (
+          <p id="n-error" className="wb-error" role="alert">
+            <AlertIcon />
+            <span><strong>{nameOf(error.base)}:</strong> {error.message} The other fields still show the last valid number, muted, until this one is fixed.</span>
+          </p>
+        ) : null}
       </div>
       <p className="wb-sr" role="status" aria-live="polite">{announcement}</p>
 

@@ -356,3 +356,5 @@
 .wb-failed { display: inline-flex; align-items: center; gap: 6px; color: var(--wb-danger); }
 .wb-failed svg { width: 18px; height: 18px; flex: none; }
 .wb-figures .wb-failed svg { width: .75em; height: .75em; }
+/* Number converter: while one field is invalid the others keep the last valid number, shown muted. */
+.wb-field[data-stale="true"] input { color: var(--wb-muted); font-style: italic; }
