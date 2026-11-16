@@ -5,6 +5,9 @@
  *
  * Every text pair below passes 4.5:1 (checked 2026-11-13); --wb-button keeps white
  * button text above 4.5:1 in both themes, which is why it is not the dark-mode accent.
+ * Control edges (inputs, chips, options) use --wb-field-line: 3.6:1 on --wb-surface and 3.3:1 on --wb-bg
+ * (light), 4.1:1 / 4.9:1 (dark), since controls need 3:1; --wb-line stays for cards and dividers.
+ * Disabled buttons use real colours, not opacity, and placeholders use --wb-muted.
  */
 :root {
   --wb-bg: #f5f5f7;
@@ -12,6 +15,7 @@
   --wb-fg: #1d1d1f;
   --wb-muted: #6e6e73;
   --wb-line: #d2d2d7;
+  --wb-field-line: #86868b;
   --wb-accent: #0066cc;
   --wb-button: #0071e3;
   --wb-button-hover: #0062c4; /* darker on hover keeps white text at 5.9:1 (#0077ed was 4.3:1) */
@@ -34,6 +38,7 @@
     --wb-fg: #f5f5f7;
     --wb-muted: #a1a1a6;
     --wb-line: #38383a;
+    --wb-field-line: #7c7c80;
     --wb-accent: #2997ff;
     --wb-focus: #2997ff;
     --wb-danger: #ff6961;
@@ -83,7 +88,7 @@
 .wb-pane-head label, .wb-pane-head h2 { margin: 0; font-size: 15px; font-weight: 600; }
 .wb-pane textarea { flex: 1; width: 100%; min-height: 220px; margin: 0; padding: 16px; border: 0; background: transparent; font-family: var(--wb-mono); font-size: 15px; line-height: 1.6; resize: vertical; overflow-wrap: anywhere; }
 .wb-pane textarea:focus-visible { outline: none; }
-.wb-pane textarea::placeholder { color: var(--wb-muted); }
+.wb-pane textarea::placeholder, :where(.wb) input::placeholder, :where(.wb) textarea::placeholder { color: var(--wb-muted); opacity: 1; }
 .wb-pane-meta { margin: 0; padding: 10px 16px; border-top: 1px solid var(--wb-line); color: var(--wb-muted); font-size: 13px; font-variant-numeric: tabular-nums; }
 .wb-error { display: flex; gap: 8px; margin: 0; padding: 10px 16px; border-top: 1px solid var(--wb-line); color: var(--wb-danger); font-size: 14px; line-height: 1.5; }
 .wb-error svg { width: 18px; height: 18px; flex: none; margin-top: 2px; }
@@ -95,7 +100,8 @@
 .wb-button:active:not(:disabled) { transform: scale(.98); }
 .wb-button-plain { display: inline-flex; align-items: center; justify-content: center; gap: 6px; min-height: 44px; padding: 0 14px; border: 0; border-radius: 980px; background: transparent; color: var(--wb-accent); font-size: 15px; font-weight: 500; cursor: pointer; }
 .wb-button-plain:hover:not(:disabled) { background: var(--wb-track); }
-.wb-button:disabled, .wb-button-plain:disabled { cursor: not-allowed; opacity: .4; }
+.wb-button:disabled { background: var(--wb-track); color: var(--wb-muted); cursor: not-allowed; }
+.wb-button-plain:disabled { color: var(--wb-muted); cursor: not-allowed; }
 .wb-button svg, .wb-button-plain svg { width: 18px; height: 18px; flex: none; }
 .wb-pane-tools { display: flex; align-items: center; gap: 4px; }
 .wb-pane-head .wb-button-plain { padding: 0 12px; }
@@ -128,7 +134,7 @@
 .wb-table em { color: var(--wb-muted); }
 .wb-options { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 8px; margin: 0 0 16px; padding: 0; border: 0; }
 .wb-options legend { margin-bottom: 8px; font-size: 15px; font-weight: 600; }
-.wb-option { position: relative; display: flex; flex-direction: column; justify-content: center; min-height: 56px; padding: 8px 16px; border: 1px solid var(--wb-line); border-radius: 14px; background: var(--wb-surface); cursor: pointer; }
+.wb-option { position: relative; display: flex; flex-direction: column; justify-content: center; min-height: 56px; padding: 8px 16px; border: 1px solid var(--wb-field-line); border-radius: 14px; background: var(--wb-surface); cursor: pointer; }
 .wb-option input { position: absolute; opacity: 0; pointer-events: none; }
 .wb-option strong { font-size: 15px; font-weight: 600; }
 .wb-option span { color: var(--wb-muted); font-size: 13px; }
@@ -167,7 +173,7 @@
 .wb-card h2 { margin: 0 0 16px; font-size: 19px; font-weight: 600; letter-spacing: -.01em; }
 .wb-inputs { display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 12px; align-items: end; }
 .wb-input { display: grid; gap: 6px; font-size: 15px; font-weight: 600; }
-.wb-input input, .wb-input select { width: 100%; min-height: 44px; padding: 0 12px; border: 1px solid var(--wb-line); border-radius: var(--wb-radius-sm); background: var(--wb-bg); font-family: var(--wb-font); font-size: 17px; font-weight: 400; }
+.wb-input input, .wb-input select { width: 100%; min-height: 44px; padding: 0 12px; border: 1px solid var(--wb-field-line); border-radius: var(--wb-radius-sm); background: var(--wb-bg); font-family: var(--wb-font); font-size: 17px; font-weight: 400; }
 .wb-input input:focus-visible, .wb-input select:focus-visible { outline: 3px solid var(--wb-focus); outline-offset: 0; }
 .wb-input input[aria-invalid="true"] { border-color: var(--wb-danger); }
 .wb-figures { display: grid; grid-template-columns: repeat(auto-fit, minmax(120px, 1fr)); gap: 12px; margin: 20px 0 0; }
@@ -223,7 +229,7 @@
 .wb-panes-gap { margin-top: 16px; }
 .wb-lead { margin: 0; font-size: 19px; line-height: 1.5; }
 .wb-expression { display: flex; gap: 8px; align-items: center; }
-.wb-expression input { flex: 1; min-width: 0; min-height: 56px; padding: 0 16px; border: 1px solid var(--wb-line); border-radius: 14px; background: var(--wb-bg); font-family: var(--wb-mono); font-size: clamp(20px, 3vw, 26px); letter-spacing: .04em; }
+.wb-expression input { flex: 1; min-width: 0; min-height: 56px; padding: 0 16px; border: 1px solid var(--wb-field-line); border-radius: 14px; background: var(--wb-bg); font-family: var(--wb-mono); font-size: clamp(20px, 3vw, 26px); letter-spacing: .04em; }
 .wb-expression input:focus-visible { outline: 3px solid var(--wb-focus); outline-offset: 0; }
 .wb-expression input[aria-invalid="true"] { border-color: var(--wb-danger); }
 .wb-cron-fields { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 8px; margin: 12px 0 0; padding: 0; list-style: none; }
@@ -231,7 +237,7 @@
 .wb-cron-fields code { font-family: var(--wb-mono); font-size: 17px; font-weight: 600; overflow-wrap: anywhere; }
 .wb-cron-fields span { color: var(--wb-muted); font-size: 13px; }
 .wb-chips { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 16px; }
-.wb-chips button { min-height: 44px; padding: 0 16px; border: 1px solid var(--wb-line); border-radius: 980px; background: var(--wb-surface); font-size: 15px; cursor: pointer; }
+.wb-chips button { min-height: 44px; padding: 0 16px; border: 1px solid var(--wb-field-line); border-radius: 980px; background: var(--wb-surface); font-size: 15px; cursor: pointer; }
 .wb-chips button:hover { background: var(--wb-track); }
 .wb-chips button[aria-pressed="true"] { border-color: var(--wb-accent); color: var(--wb-accent); font-weight: 600; }
 .wb-list { margin: 0; padding: 0; list-style: none; counter-reset: wb-list; }
@@ -273,11 +279,13 @@
 .wb-export .wb-segmented button { min-width: 0; padding: 0 14px; }
 .wb-code { margin: 0; padding: 16px; overflow: auto; font-family: var(--wb-mono); font-size: 14px; line-height: 1.6; }
 @media (max-width: 720px) {
-  .wb-swatches { grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 4px; }
-  .wb-swatches button { min-height: 96px; padding: 6px 2px; }
-  .wb-swatches span { padding: 2px 4px; font-size: 12px; writing-mode: vertical-rl; transform: rotate(180deg); }
+  /* Five columns are too narrow for a horizontal hex label, so phones stack the swatches as bars. */
+  .wb-swatches { grid-template-columns: minmax(0, 1fr); gap: 4px; }
+  .wb-swatches button { min-height: 52px; align-items: center; justify-content: flex-end; padding: 6px 8px; }
   .wb-export .wb-pane-head { flex-wrap: wrap; padding: 8px 8px 8px 16px; }
-  .wb-export .wb-pane-tools { width: 100%; justify-content: space-between; }
+  .wb-export .wb-pane-tools { flex-wrap: wrap; width: 100%; justify-content: flex-end; gap: 8px; }
+  .wb-export .wb-segmented { flex: 1 1 100%; }
+  .wb-export .wb-segmented button { padding: 0 8px; }
 }
 /* The renderer puts a <br /> between blocks; block margins already space them. Tailwind's reset
    also strips heading weight and list bullets, so restore both inside the preview. */
@@ -289,7 +297,6 @@
 .wb-prose li { margin: 4px 0; }
 @media (max-width: 720px) {
   .wb-palettes { grid-template-columns: 1fr 1fr; }
-  .wb-export .wb-segmented { flex: 1; }
 }
 
 /* Added with the last five tools (2026-11-13). */
@@ -310,7 +317,7 @@
 .wb-unit { color: var(--wb-muted); font-size: 15px; font-weight: 500; letter-spacing: 0; }
 .wb-note code { font-family: var(--wb-mono); }
 .wb-textarea-short { min-height: 120px !important; }
-.wb-search input { width: min(260px, 100%); min-height: 44px; padding: 0 14px; border: 1px solid var(--wb-line); border-radius: 980px; background: var(--wb-bg); font-size: 15px; }
+.wb-search input { width: min(260px, 100%); min-height: 44px; padding: 0 14px; border: 1px solid var(--wb-field-line); border-radius: 980px; background: var(--wb-bg); font-size: 15px; }
 .wb-search input:focus-visible { outline: 3px solid var(--wb-focus); outline-offset: 0; }
 .wb-items { display: grid; gap: 8px; margin: 0; padding: 0; list-style: none; }
 .wb-items li { border: 1px solid var(--wb-line); border-radius: 14px; background: var(--wb-bg); overflow: hidden; }
@@ -325,7 +332,7 @@
 .wb-library-list button { display: flex; width: 100%; min-height: 44px; flex-direction: column; justify-content: center; padding: 8px 12px; border: 0; border-radius: 10px; background: transparent; text-align: left; cursor: pointer; }
 .wb-library-list button:hover { background: var(--wb-track); }
 .wb-library-list button[aria-current="true"] { background: var(--wb-button); color: var(--wb-button-fg); }
-.wb-library-list button[aria-current="true"] span { color: inherit; opacity: .9; }
+.wb-library-list button[aria-current="true"] span { color: inherit; }
 .wb-library-list strong { font-size: 15px; font-weight: 600; }
 .wb-library-list span { color: var(--wb-muted); font-size: 13px; }
 .wb-code-lines code { display: block; counter-reset: wb-line; }

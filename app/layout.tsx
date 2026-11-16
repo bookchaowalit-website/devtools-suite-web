@@ -6,20 +6,23 @@ import { Inter } from "next/font/google";
 import "./globals.css";
 import "./workbench.css";
 import { SITE_URL, SUITE_NAME } from "@/lib/site";
+import { TOOLS } from "@/lib/tools";
 
 const inter = Inter({ subsets: ["latin"], variable: "--font-wb", display: "swap" });
+
+const SUITE_DESCRIPTION = `${TOOLS.length} developer tools in one place. Everything runs in your browser; nothing you type is uploaded.`;
 
 export const metadata: Metadata = {
   metadataBase: new URL(SITE_URL),
   title: { default: `${SUITE_NAME} - browser developer tools`, template: `%s | ${SUITE_NAME}` },
-  description: "Seventeen developer tools in one place. Everything runs in your browser; nothing you type is uploaded.",
+  description: SUITE_DESCRIPTION,
   authors: [{ name: "Bookchaowalit", url: "https://bookchaowalit.com" }],
   robots: { index: true, follow: true },
   openGraph: {
     type: "website",
     siteName: SUITE_NAME,
     title: `${SUITE_NAME} - browser developer tools`,
-    description: "Seventeen developer tools in one place. Everything runs in your browser; nothing you type is uploaded.",
+    description: SUITE_DESCRIPTION,
     url: "/",
   },
 };
