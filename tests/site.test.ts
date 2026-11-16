@@ -16,3 +16,16 @@ describe("robots and sitemap", () => {
     expect(urls).toHaveLength(18);
   });
 });
+
+describe("tool Open Graph", () => {
+  it("gives every tool page its own og:url, since a page openGraph replaces the root one", async () => {
+    const { toolOpenGraph, SUITE_NAME } = await import("@/lib/site");
+    expect(toolOpenGraph("base64", "Base64", "Encode text.")).toEqual({
+      type: "website", siteName: SUITE_NAME, title: `Base64 | ${SUITE_NAME}`, description: "Encode text.", url: "/base64",
+    });
+    for (const tool of TOOLS) {
+      const layout = await import(`@/app/(tools)/${tool.slug}/layout`);
+      expect(layout.metadata.openGraph.url).toBe(`/${tool.slug}`);
+    }
+  });
+});
