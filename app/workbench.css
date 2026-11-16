@@ -360,3 +360,6 @@
 .wb-field[data-stale="true"] input { color: var(--wb-muted); font-style: italic; }
 .wb-empty-actions { display: grid; gap: 4px; justify-items: start; }
 .wb-empty-actions .wb-note { margin: 4px 8px 0; }
+/* Regex on phones: the match count and highlighted text come before the test-text editor, so a 375×812
+   screen shows the result without scrolling. The result pane has no controls, so tab order is unchanged. */
+@media (max-width: 720px) { .wb-panes-result-first > :last-child { order: -1; } }
