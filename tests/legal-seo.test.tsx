@@ -4,8 +4,6 @@ import { describe, expect, it, vi } from "vitest";
 // Interface coverage (ADR-0015 §1.2, free tool): every page links the privacy policy, the public
 // status page and a contact, and the layout carries Open Graph metadata.
 
-vi.mock("@vercel/analytics/react", () => ({ Analytics: () => null }));
-vi.mock("@vercel/speed-insights/next", () => ({ SpeedInsights: () => null }));
 vi.mock("next/font/google", () => ({ Inter: () => ({ variable: "font-wb", className: "font-wb" }) }));
 
 const { default: RootLayout, metadata } = await import("@/app/layout");

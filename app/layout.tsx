@@ -1,7 +1,5 @@
 import type { Metadata, Viewport } from "next";
 import Link from "next/link";
-import { Analytics } from "@vercel/analytics/react";
-import { SpeedInsights } from "@vercel/speed-insights/next";
 import { Inter } from "next/font/google";
 import "./globals.css";
 import "./workbench.css";
@@ -51,8 +49,6 @@ export default function RootLayout({ children }: Readonly<{ children: React.Reac
             <a href="mailto:bookchaowalit.work@gmail.com">Contact</a>
           </nav>
         </footer>
-        <Analytics />
-        <SpeedInsights />
       </body>
     </html>
   );

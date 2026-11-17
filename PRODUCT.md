@@ -60,5 +60,5 @@ Front-end and server errors go to Sentry (errors only, personal data stripped) w
 
 ## Boundaries
 
-- No accounts, no server storage, no analytics beyond Vercel Analytics/Speed Insights. Only the clipboard manager
+- No accounts, no server storage, no analytics or tracking scripts (removed 2026-11-17). Only the clipboard manager
   writes to `localStorage`.
