@@ -68,15 +68,26 @@ export function describe(expr: string) {
   return `${time}; ${dates.join(" · ")}`;
 }
 
+/** Expands a field once into a lookup table indexed by value, so the minute loop does no parsing. */
+function allowedValues(field: string, min: number, max: number): boolean[] {
+  const table: boolean[] = [];
+  for (let value = min; value <= max; value += 1) table[value] = fieldMatches(field, value, min, max);
+  return table;
+}
+
 export function nextRuns(expr: string, count = 5) {
   if (!validateCron(expr).ok) return [];
-  const parts = expr.trim().split(/\s+/);
-  const [minute, hour, dom, month, dow] = parts;
+  const [minute, hour, dom, month, dow] = expr.trim().split(/\s+/);
+  const minutes = allowedValues(minute, 0, 59);
+  const hours = allowedValues(hour, 0, 23);
+  const days = allowedValues(dom, 1, 31);
+  const months = allowedValues(month, 1, 12);
+  const weekdays = allowedValues(dow, 0, 7);
+  if (dow !== "*" && weekdays[7]) weekdays[0] = true;
   const cursor = new Date(); cursor.setSeconds(0, 0); cursor.setMinutes(cursor.getMinutes() + 1);
   const runs: string[] = [];
   for (let i = 0; i < 60 * 24 * 400 && runs.length < count; i += 1) {
-    const weekday = cursor.getDay();
-    if (fieldMatches(minute, cursor.getMinutes(), 0, 59) && fieldMatches(hour, cursor.getHours(), 0, 23) && fieldMatches(dom, cursor.getDate(), 1, 31) && fieldMatches(month, cursor.getMonth() + 1, 1, 12) && (fieldMatches(dow, weekday, 0, 7) || (weekday === 0 && dow !== "*" && fieldMatches(dow, 7, 0, 7)))) runs.push(cursor.toLocaleString([], { dateStyle: "medium", timeStyle: "short" }));
+    if (minutes[cursor.getMinutes()] && hours[cursor.getHours()] && days[cursor.getDate()] && months[cursor.getMonth() + 1] && weekdays[cursor.getDay()]) runs.push(cursor.toLocaleString([], { dateStyle: "medium", timeStyle: "short" }));
     cursor.setMinutes(cursor.getMinutes() + 1);
   }
   return runs;
