@@ -22,7 +22,8 @@ const NAMES: Partial<Record<number, readonly string[]>> = {
 /** One end of a range as a number string: a month or weekday name becomes its number, anything else is unchanged. */
 function nameToNumber(end: string, index: number): string {
   const names = NAMES[index];
-  const at = names ? names.indexOf(end.toUpperCase()) : -1;
+  // ASCII letters only, the same rule numericField uses (toUpperCase would turn "ſun" into "SUN").
+  const at = names && /^[A-Za-z]+$/.test(end) ? names.indexOf(end.toUpperCase()) : -1;
   return at === -1 ? end : String(index === 3 ? at + 1 : at);
 }
 
@@ -86,8 +87,27 @@ export function describe(expr: string) {
     : hour === "*" ? `at ${minuteList(minute)} of every hour`
     : plain(minute) && plain(hour) ? `at ${hour.padStart(2, "0")}:${minute.padStart(2, "0")}`
     : `minute ${minute} of hour ${hour}`;
-  const dates = [dom !== "*" ? `day ${dom}` : "every day", month !== "*" ? `month ${month}` : "all months", dow !== "*" ? `weekday ${dow}` : "all weekdays"];
+  const months = month !== "*" ? `month ${month}` : "all months";
+  // Both day fields restricted: cron runs when either one matches.
+  const dates = eitherDay(dom, dow) ? [`on day ${dom} or on ${weekdayNames(dow)}`, months]
+    : [dom !== "*" ? `day ${dom}` : "every day", months, dow !== "*" ? `weekday ${dow}` : "all weekdays"];
   return `${time}; ${dates.join(" · ")}`;
+}
+
+/** crontab (Vixie/cronie) rule: when neither day field starts with *, a day runs if day-of-month OR weekday matches. */
+function eitherDay(dom: string, dow: string): boolean {
+  return !dom.startsWith("*") && !dow.startsWith("*");
+}
+
+const WEEKDAY_NAMES = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"];
+
+/** A weekday field in words, e.g. "MON" → "Monday", "1-5" → "Monday-Friday"; steps keep their number. */
+function weekdayNames(dow: string): string {
+  return dow.split(",").map((part) => {
+    const [range, step] = part.split("/");
+    const words = range.split("-").map((end) => WEEKDAY_NAMES[Number(nameToNumber(end, 4))] ?? end).join("-");
+    return step === undefined ? words : `${words} every ${step} days`;
+  }).join(", ");
 }
 
 /** The minutes a minute field really runs on, from the same matcher nextRuns uses, e.g. "minutes 0, 7, 15, 30 and 45". */
@@ -115,10 +135,12 @@ export function nextRuns(expr: string, count = 5) {
   const months = allowedValues(month, 1, 12);
   const weekdays = allowedValues(dow, 0, 7);
   if (dow !== "*" && weekdays[7]) weekdays[0] = true;
+  const either = eitherDay(dom, dow);
   const cursor = new Date(); cursor.setSeconds(0, 0); cursor.setMinutes(cursor.getMinutes() + 1);
   const runs: string[] = [];
   for (let i = 0; i < 60 * 24 * 400 && runs.length < count; i += 1) {
-    if (minutes[cursor.getMinutes()] && hours[cursor.getHours()] && days[cursor.getDate()] && months[cursor.getMonth() + 1] && weekdays[cursor.getDay()]) runs.push(cursor.toLocaleString([], { dateStyle: "medium", timeStyle: "short" }));
+    const dayOk = either ? days[cursor.getDate()] || weekdays[cursor.getDay()] : days[cursor.getDate()] && weekdays[cursor.getDay()];
+    if (minutes[cursor.getMinutes()] && hours[cursor.getHours()] && dayOk && months[cursor.getMonth() + 1]) runs.push(cursor.toLocaleString([], { dateStyle: "medium", timeStyle: "short" }));
     cursor.setMinutes(cursor.getMinutes() + 1);
   }
   return runs;

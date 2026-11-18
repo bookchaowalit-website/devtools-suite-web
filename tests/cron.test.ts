@@ -121,3 +121,34 @@ describe("month and weekday names", () => {
     expect(describeCron("0 0 1 JAN *")).toBe("at 00:00; day 1 · month JAN · all weekdays");
   });
 });
+
+// Both day fields restricted: crontab runs when EITHER matches (Codex review, 2026-11-19).
+describe("day of month OR weekday", () => {
+  beforeEach(() => { vi.useFakeTimers(); vi.setSystemTime(new Date(2026, 10, 16, 8, 0)); }); // Monday 16 Nov 2026
+  afterEach(() => vi.useRealTimers());
+  const at = (month: number, day: number) => new Date(2026, month, day, 9, 0).toLocaleString([], { dateStyle: "medium", timeStyle: "short" });
+
+  it("runs on day 1 and on every Monday when both are set", () => {
+    // Mondays 16, 23, 30 Nov, then Tue 1 Dec (day 1), then Monday 7 Dec.
+    expect(nextRuns("0 9 1 * MON", 5)).toEqual([at(10, 16), at(10, 23), at(10, 30), at(11, 1), at(11, 7)]);
+    expect(nextRuns("0 9 1 * 1", 5)).toEqual(nextRuns("0 9 1 * MON", 5));
+  });
+
+  it("keeps AND when either day field starts with *", () => {
+    // A * day field (or one starting with *) leaves the other field in charge.
+    expect(nextRuns("0 9 1 * *", 1)).toEqual([at(11, 1)]);
+    expect(nextRuns("0 9 * * MON", 2)).toEqual([at(10, 16), at(10, 23)]);
+    expect(nextRuns("0 9 */1 * MON", 2)).toEqual([at(10, 16), at(10, 23)]);
+  });
+
+  it("says or in the description", () => {
+    expect(describeCron("0 9 1 * MON")).toBe("at 09:00; on day 1 or on Monday · all months");
+    expect(describeCron("0 9 1,15 * 1-5")).toBe("at 09:00; on day 1,15 or on Monday-Friday · all months");
+    expect(describeCron("0 9 1 JAN sun,SAT")).toBe("at 09:00; on day 1 or on Sunday, Saturday · month JAN");
+    expect(describeCron("0 9 * * MON")).toBe("at 09:00; every day · all months · weekday MON");
+  });
+
+  it("does not treat non-ASCII look-alikes as names", () => {
+    expect(validateCron("0 9 * * \u017Fun").ok).toBe(false);
+  });
+});
