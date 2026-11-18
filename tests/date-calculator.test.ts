@@ -45,3 +45,8 @@ test("weeks and months read as calendar words, not decimals", () => {
   assert.deepEqual(dateDifference("2026-11-26", "2026-11-19"), { days: -7, weeks: "−1 week", months: "−0 months 7 days" });
   assert.equal(dateDifference("2026-11-19", "2026-11-19").weeks, "0 days");
 });
+
+test("years 0001–0099 stay in their own century", () => {
+  assert.equal(dateDifference("0099-01-01", "0099-02-01").months, "1 month 0 days");
+  assert.equal(dateDifference("0001-01-31", "0001-03-01").months, "1 month 1 day");
+});

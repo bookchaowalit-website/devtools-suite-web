@@ -2,12 +2,11 @@
 
 import { useDeferredValue, useMemo, useState } from "react";
 import { AlertIcon, CheckIcon, CopyBlocked, CopyIcon, SwapIcon, ToolIntro, UndoToast, useCopy, useUndo, Workbench } from "@/components/workbench";
-import { diffLines, pairChanges, unifiedDiff, wordDiff, type Op } from "@/lib/diffchecker/diff";
+import { diffLines, unifiedDiff, wordDiffs, type Op, type WordPart } from "@/lib/diffchecker/diff";
 
-/** A changed line with the words that differ from its partner line highlighted. */
-function ChangedLine({ op, partner }: { op: Op; partner?: Op }) {
-  if (!partner) return <>{op.line || " "}</>;
-  const parts = op.type === "del" ? wordDiff(op.line, partner.line).before : wordDiff(partner.line, op.line).after;
+/** A changed line with the words that differ from its partner line highlighted (when a word diff was computed). */
+function ChangedLine({ op, parts }: { op: Op; parts?: WordPart[] }) {
+  if (!parts) return <>{op.line || " "}</>;
   return <>{parts.map((part, index) => (part.changed ? <span key={index} className={op.type === "del" ? "wb-word-del" : "wb-word-add"}>{part.text}</span> : <span key={index}>{part.text}</span>))}</>;
 }
 
@@ -20,14 +19,17 @@ export default function DiffCheckerTool() {
   const deferredLeft = useDeferredValue(left);
   const deferredRight = useDeferredValue(right);
   const { ops, approximate } = useMemo(() => diffLines(deferredLeft, deferredRight), [deferredLeft, deferredRight]);
-  const pairs = useMemo(() => pairChanges(ops), [ops]);
+  // Word diffs are computed once per pair, within a total budget, and skipped when the line diff is approximate.
+  const words = useMemo(() => wordDiffs(ops, approximate), [ops, approximate]);
+  // The deferred comparison can lag one render behind the boxes: Copy waits until it matches what is on screen.
+  const current = deferredLeft === left && deferredRight === right;
   const added = ops.filter((op) => op.type === "add").length;
   const removed = ops.filter((op) => op.type === "del").length;
   const same = ops.length - added - removed;
-  const unified = useMemo(() => (added || removed ? unifiedDiff(ops) : ""), [ops, added, removed]);
+  const unified = useMemo(() => (added || removed ? unifiedDiff(deferredLeft, deferredRight) : ""), [deferredLeft, deferredRight, added, removed]);
   const { copied, blocked, copy } = useCopy(unified, (ok) => setAnnouncement(ok ? "Diff copied to the clipboard as a unified diff." : "Copy was blocked. Select the differences and copy them by hand."));
 
-  const swap = () => { setLeft(right); setRight(left); setAnnouncement("Swapped original and changed text."); };
+  const swap = () => { setLeft(right); setRight(left); undo.dismiss(); setAnnouncement("Swapped original and changed text."); };
   const clear = () => {
     const before = { left, right };
     setLeft(""); setRight("");
@@ -41,11 +43,11 @@ export default function DiffCheckerTool() {
       <div className="wb-panes">
         <section className="wb-pane">
           <div className="wb-pane-head"><label htmlFor="diff-left">Original</label></div>
-          <textarea id="diff-left" value={left} onChange={(event) => setLeft(event.target.value)} placeholder="Paste the original text" spellCheck={false} autoComplete="off" />
+          <textarea id="diff-left" value={left} onChange={(event) => { setLeft(event.target.value); undo.dismiss(); }} placeholder="Paste the original text" spellCheck={false} autoComplete="off" />
         </section>
         <section className="wb-pane">
           <div className="wb-pane-head"><label htmlFor="diff-right">Changed</label></div>
-          <textarea id="diff-right" value={right} onChange={(event) => setRight(event.target.value)} placeholder="Paste the changed text" spellCheck={false} autoComplete="off" />
+          <textarea id="diff-right" value={right} onChange={(event) => { setRight(event.target.value); undo.dismiss(); }} placeholder="Paste the changed text" spellCheck={false} autoComplete="off" />
         </section>
       </div>
       {/* Actions that touch both texts sit under both panes, not in one pane's header. */}
@@ -68,8 +70,8 @@ export default function DiffCheckerTool() {
                 <span>{same} unchanged</span>
               </p>
             ) : null}
-            <button type="button" className="wb-button" onClick={() => copy(unified)} disabled={!unified}>
-              {copied ? <><CheckIcon />Copied</> : <><CopyIcon />Copy diff</>}
+            <button type="button" className="wb-button" onClick={() => copy(unified)} disabled={!unified || !current}>
+              {!current ? "Comparing…" : copied ? <><CheckIcon />Copied</> : <><CopyIcon />Copy diff</>}
             </button>
           </div>
         </div>
@@ -88,7 +90,7 @@ export default function DiffCheckerTool() {
                 <span className="mark" aria-hidden="true">{op.type === "add" ? "+" : op.type === "del" ? "−" : ""}</span>
                 <code>
                   {op.type !== "equal" ? <span className="wb-sr">{op.type === "add" ? "Added: " : "Removed: "}</span> : null}
-                  {op.type === "equal" ? op.line || " " : <ChangedLine op={op} partner={pairs.has(index) ? ops[pairs.get(index) ?? 0] : undefined} />}
+                  {op.type === "equal" ? op.line || " " : <ChangedLine op={op} parts={words.get(index)} />}
                 </code>
               </div>
             ))}

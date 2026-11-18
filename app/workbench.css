@@ -450,7 +450,6 @@
 .wb-saved { display: inline-flex; align-items: center; gap: 4px; }
 .wb-saved svg { width: 14px; height: 14px; color: var(--wb-success); }
 @media (max-width: 720px) {
-  .wb-color-values-first > .wb-fields { order: -1; }
   .wb-figures-3 { grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; }
   .wb-figures-3 div { padding: 10px 12px; }
   .wb-figures-3 dd { font-size: 24px; }
@@ -490,3 +489,4 @@
 @media (max-width: 720px) {
   .wb-options-beam .wb-option > span:last-child { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
 }
+.wb-pane-switch { padding: 4px 16px 8px; border-top: 1px solid var(--wb-line); }

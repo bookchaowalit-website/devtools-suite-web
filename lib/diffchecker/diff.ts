@@ -84,10 +84,50 @@ export function pairChanges(ops: Op[]): Map<number, number> {
   return pairs;
 }
 
-/** The comparison as one unified-diff hunk, ready to paste into a review or a ticket. */
-export function unifiedDiff(ops: Op[], { from = "original", to = "changed" }: { from?: string; to?: string } = {}): string {
+/**
+ * Two texts as one unified-diff hunk that `git apply` and `patch` accept: every line ends with a newline, the final
+ * newline of each text is not counted as an extra empty line, and a side whose text does not end with a newline gets
+ * "\ No newline at end of file" after its last line (the last shared line is split into - and + when only one side
+ * ends with a newline).
+ */
+export function unifiedDiff(left: string, right: string, { from = "original", to = "changed" }: { from?: string; to?: string } = {}): string {
+  const leftEol = left.endsWith("\n"); const rightEol = right.endsWith("\n");
+  const ops = diffLines(leftEol ? left.slice(0, -1) : left, rightEol ? right.slice(0, -1) : right).ops;
+  const last = ops[ops.length - 1];
+  if (last && last.type === "equal" && leftEol !== rightEol) {
+    ops.splice(ops.length - 1, 1, { type: "del", line: last.line, left: last.left, right: null }, { type: "add", line: last.line, left: null, right: last.right });
+  }
   const leftCount = ops.filter((op) => op.type !== "add").length;
   const rightCount = ops.filter((op) => op.type !== "del").length;
-  const body = ops.map((op) => `${op.type === "add" ? "+" : op.type === "del" ? "-" : " "}${op.line}`);
-  return [`--- ${from}`, `+++ ${to}`, `@@ -${leftCount ? 1 : 0},${leftCount} +${rightCount ? 1 : 0},${rightCount} @@`, ...body].join("\n");
+  const lastLeft = ops.reduce((at, op, index) => (op.type !== "add" ? index : at), -1);
+  const lastRight = ops.reduce((at, op, index) => (op.type !== "del" ? index : at), -1);
+  const NO_EOL = "\\ No newline at end of file\n";
+  let body = "";
+  ops.forEach((op, index) => {
+    body += `${op.type === "add" ? "+" : op.type === "del" ? "-" : " "}${op.line}\n`;
+    const endsLeft = index === lastLeft && !leftEol && left !== "";
+    const endsRight = index === lastRight && !rightEol && right !== "";
+    if ((op.type === "del" && endsLeft) || (op.type === "add" && endsRight) || (op.type === "equal" && endsLeft && endsRight)) body += NO_EOL;
+  });
+  const range = (count: number) => `${count ? 1 : 0},${count}`;
+  return `--- ${from}\n+++ ${to}\n@@ -${range(leftCount)} +${range(rightCount)} @@\n${body}`;
+}
+
+/** Pairs of removed and added lines worth a word diff, within a total budget of word-table cells for the whole page. */
+export const MAX_WORD_CELLS = 400_000;
+export function wordDiffs(ops: Op[], approximate: boolean): Map<number, WordPart[]> {
+  const result = new Map<number, WordPart[]>();
+  if (approximate) return result;
+  let budget = MAX_WORD_CELLS;
+  const pairs = pairChanges(ops);
+  for (const [index, partner] of pairs) {
+    if (ops[index].type !== "del") continue;
+    const cost = ops[index].line.split(/\s+/).length * ops[partner].line.split(/\s+/).length * 4;
+    if (cost > budget) break;
+    budget -= cost;
+    const { before, after } = wordDiff(ops[index].line, ops[partner].line);
+    result.set(index, before);
+    result.set(partner, after);
+  }
+  return result;
 }

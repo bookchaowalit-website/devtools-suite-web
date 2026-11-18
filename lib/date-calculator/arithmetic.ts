@@ -15,9 +15,11 @@ const utcDate = (value: string) => new Date(`${value}T00:00:00Z`);
 
 /** `months` whole calendar months after `date`, the day clamped to the month's last day (Jan 31 + 1 month = Feb 28/29). */
 function addMonthsClamped(date: Date, months: number): Date {
+  // setUTCFullYear, not Date.UTC: Date.UTC reads years 0–99 as 1900–1999.
+  const at = (year: number, month: number, day: number) => { const value = new Date(0); value.setUTCFullYear(year, month, day); return value; };
   const year = date.getUTCFullYear(); const month = date.getUTCMonth() + months;
-  const last = new Date(Date.UTC(year, month + 1, 0)).getUTCDate();
-  return new Date(Date.UTC(year, month, Math.min(date.getUTCDate(), last)));
+  const last = at(year, month + 1, 0).getUTCDate();
+  return at(year, month, Math.min(date.getUTCDate(), last));
 }
 
 /**

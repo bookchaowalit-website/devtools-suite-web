@@ -1,6 +1,10 @@
 import assert from "node:assert/strict";
 import { test } from "vitest";
-import { diffLines, lineDiff, MAX_DIFF_CELLS, pairChanges, unifiedDiff, wordDiff } from "@/lib/diffchecker/diff";
+import { execFileSync } from "node:child_process";
+import { mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
+import { tmpdir } from "node:os";
+import { join } from "node:path";
+import { diffLines, lineDiff, MAX_DIFF_CELLS, pairChanges, unifiedDiff, wordDiff, wordDiffs } from "@/lib/diffchecker/diff";
 
 test("identical and empty texts retain their shared lines", () => {
   assert.deepEqual(lineDiff("a\nb", "a\nb"), [
@@ -49,7 +53,34 @@ test("word diff marks only the words that changed, and changes pair up removed w
   assert.deepEqual([...pairChanges(ops).entries()], [[1, 2], [2, 1]]);
 });
 
-test("unified diff has headers, one hunk and +/- / space prefixes", () => {
-  assert.equal(unifiedDiff(lineDiff("a\nb", "a\nc")), "--- original\n+++ changed\n@@ -1,2 +1,2 @@\n a\n-b\n+c");
-  assert.equal(unifiedDiff(lineDiff("", "x")), "--- original\n+++ changed\n@@ -0,0 +1,1 @@\n+x");
+test("unified diff has headers, one hunk, +/- / space prefixes and a newline after every line", () => {
+  assert.equal(unifiedDiff("a\nb\n", "a\nc\n"), "--- original\n+++ changed\n@@ -1,2 +1,2 @@\n a\n-b\n+c\n");
+  assert.equal(unifiedDiff("", "x\n"), "--- original\n+++ changed\n@@ -0,0 +1,1 @@\n+x\n");
+  assert.equal(unifiedDiff("a", "b"), "--- original\n+++ changed\n@@ -1,1 +1,1 @@\n-a\n\\ No newline at end of file\n+b\n\\ No newline at end of file\n");
+  assert.equal(unifiedDiff("a\n", "a"), "--- original\n+++ changed\n@@ -1,1 +1,1 @@\n-a\n+a\n\\ No newline at end of file\n");
+});
+
+// Codex review, 2026-11-19 (post-push round): the copied patch must apply.
+test("git apply accepts the copied diff and it reproduces the changed text", () => {
+  const dir = mkdtempSync(join(tmpdir(), "diffcheck-"));
+  const cases: [string, string][] = [["a\n", "b\n"], ["a\nb\nc\n", "a\nB\nc\nd\n"], ["x\ny", "x\nz"], ["same\n", "same"], ["one", "one\n"], ["", "new\n"]];
+  try {
+    execFileSync("git", ["init", "-q"], { cwd: dir });
+    for (const [left, right] of cases) {
+      writeFileSync(join(dir, "f.txt"), left);
+      writeFileSync(join(dir, "p.diff"), unifiedDiff(left, right, { from: "a/f.txt", to: "b/f.txt" }));
+      execFileSync("git", ["apply", "p.diff"], { cwd: dir });
+      assert.equal(readFileSync(join(dir, "f.txt"), "utf8"), right, JSON.stringify([left, right]));
+    }
+  } finally { rmSync(dir, { recursive: true, force: true }); }
+});
+
+test("word diffs stop at a total budget and are skipped for an approximate diff", () => {
+  const long = Array.from({ length: 300 }, (_, i) => `word${i}`).join(" ");
+  const left = Array.from({ length: 50 }, () => long).join("\n");
+  const right = Array.from({ length: 50 }, () => `${long} x`).join("\n");
+  const result = diffLines(left, right);
+  const words = wordDiffs(result.ops, result.approximate);
+  assert.ok(words.size > 0 && words.size < 100);
+  assert.equal(wordDiffs(result.ops, true).size, 0);
 });

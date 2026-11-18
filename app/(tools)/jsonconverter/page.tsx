@@ -40,6 +40,7 @@ export default function JsonConverterTool() {
   const swap = () => {
     if (!output) return;
     setInput(output);
+    undo.dismiss();
     setMode(SWAPPED[mode]);
     setAnnouncement(`Swapped. The result is now the input (${SOURCE[SWAPPED[mode]]}).`);
   };
@@ -69,7 +70,7 @@ export default function JsonConverterTool() {
             <label htmlFor="json-input">{SOURCE[mode]}</label>
             <button type="button" className="wb-button-plain" onClick={clear} disabled={!input}>Clear</button>
           </div>
-          <textarea ref={editor} id="json-input" value={input} onChange={(event) => setInput(event.target.value)} placeholder={`Paste ${SOURCE[mode]}`} aria-invalid={problem ? true : undefined} aria-describedby={problem ? "json-error" : "json-input-meta"} spellCheck={false} autoComplete="off" />
+          <textarea ref={editor} id="json-input" value={input} onChange={(event) => { setInput(event.target.value); undo.dismiss(); }} placeholder={`Paste ${SOURCE[mode]}`} aria-invalid={problem ? true : undefined} aria-describedby={problem ? "json-error" : "json-input-meta"} spellCheck={false} autoComplete="off" />
           {problem ? (
             <div id="json-error" className="wb-error" role="alert">
               <AlertIcon />

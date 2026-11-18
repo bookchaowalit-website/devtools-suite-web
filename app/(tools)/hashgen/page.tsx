@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, type DragEvent } from "react";
+import { useEffect, useRef, useState, type DragEvent } from "react";
 import { AlertIcon, CheckIcon, CopyBlocked, CopyIcon, Segmented, ToolIntro, useCopy, Workbench } from "@/components/workbench";
 import { algorithms, compareDigest, digestBytes, formatDigest, type Algorithm, type DigestFormat } from "@/lib/hashgen/digest";
 
@@ -15,7 +15,8 @@ const FORMAT_NOTE: Record<DigestFormat, (bits: number) => string> = {
 };
 /** Web Crypto hashes a file in one piece, so very large files are refused instead of exhausting memory. */
 const MAX_FILE_BYTES = 512 * 1024 * 1024;
-type PickedFile = { name: string; size: number; key: string; data: ArrayBuffer };
+/** One selection of a file. `id` is new for every selection, so two files with the same name, size and date never share a result. */
+type PickedFile = { id: number; name: string; size: number; data: ArrayBuffer | null };
 
 const formatSize = (bytes: number) => bytes < 1024 ? `${bytes} ${bytes === 1 ? "byte" : "bytes"}` : bytes < 1024 ** 2 ? `${(bytes / 1024).toFixed(1)} KB` : `${(bytes / 1024 ** 2).toFixed(1)} MB`;
 
@@ -29,33 +30,50 @@ export default function HashTool() {
   const [format, setFormat] = useState<DigestFormat>("hex");
   const [expected, setExpected] = useState("");
   // The digest is stored with the input and algorithm it belongs to, so a stale result is never shown.
-  const [result, setResult] = useState<{ key: string; bytes: Uint8Array } | null>(null);
+  const [result, setResult] = useState<{ key: string; bytes: Uint8Array | null; error?: string } | null>(null);
+  const selection = useRef(0);
+  const fileInput = useRef<HTMLInputElement>(null);
   const [announcement, setAnnouncement] = useState("");
 
-  const subject = source === "text" ? (input === "" ? null : `text\u0000${input}`) : file ? `file\u0000${file.key}` : null;
+  const subject = source === "text" ? (input === "" ? null : `text\u0000${input}`) : file?.data ? `file\u0000${file.id}` : null;
   const key = subject ? `${algorithm}\u0000${subject}` : "";
   useEffect(() => {
     if (!subject) return;
     let cancelled = false;
     const value = source === "text" ? input : file?.data;
-    if (value === undefined) return;
-    digestBytes(algorithm, value).then((bytes) => { if (!cancelled) setResult({ key: `${algorithm}\u0000${subject}`, bytes }); });
+    if (value === undefined || value === null) return;
+    const resultKey = `${algorithm}\u0000${subject}`;
+    digestBytes(algorithm, value)
+      .then((bytes) => { if (!cancelled) setResult({ key: resultKey, bytes }); })
+      .catch(() => { if (!cancelled) setResult({ key: resultKey, bytes: null, error: "The browser could not hash this input." }); });
     return () => { cancelled = true; };
   }, [algorithm, subject, source, input, file]);
+  // Only a result for exactly this input (and this file selection) is ever shown, compared or copied.
   const bytes = key && result?.key === key ? result.bytes : null;
+  const hashError = key && result?.key === key ? result.error ?? "" : "";
   const digest = bytes ? formatDigest(bytes, format) : "";
   const verdict = bytes ? compareDigest(expected, bytes) : "empty";
   const { copied, blocked, copy } = useCopy(digest, (ok) => setAnnouncement(ok ? "Hash copied to the clipboard." : "Copy was blocked. Select the hash and copy it by hand."));
   const textBytes = new TextEncoder().encode(input).length;
 
   const pick = async (picked: File | undefined) => {
+    // Reset the input so choosing the same file again (after Clear, say) still fires a change.
+    if (fileInput.current) fileInput.current.value = "";
     if (!picked) return;
+    const id = ++selection.current;
     if (picked.size > MAX_FILE_BYTES) { setFile(null); setFileError(`${picked.name} is ${formatSize(picked.size)}; files up to 512 MB can be hashed in the browser.`); return; }
     setFileError("");
-    const data = await picked.arrayBuffer();
-    setFile({ name: picked.name, size: picked.size, key: `${picked.name}\u0000${picked.size}\u0000${picked.lastModified}`, data });
+    // The new selection replaces the old one at once (no stale hash while it is read); a slower, older read is ignored.
+    setFile({ id, name: picked.name, size: picked.size, data: null });
     setAnnouncement(`Hashing ${picked.name}.`);
+    try {
+      const data = await picked.arrayBuffer();
+      if (selection.current === id) setFile({ id, name: picked.name, size: picked.size, data });
+    } catch {
+      if (selection.current === id) { setFile(null); setFileError(`${picked.name} could not be read. It may have been moved or changed; choose it again.`); }
+    }
   };
+  const clearFile = () => { selection.current += 1; setFile(null); setFileError(""); if (fileInput.current) fileInput.current.value = ""; };
   const drop = (event: DragEvent<HTMLElement>) => { event.preventDefault(); setOver(false); void pick(event.dataTransfer.files[0]); };
   const emptyText = source === "text" ? "Type or paste text to get its hash." : "Choose or drop a file to get its hash.";
 
@@ -96,11 +114,11 @@ export default function HashTool() {
           <section className="wb-pane" aria-labelledby="hash-file-label">
             <div className="wb-pane-head">
               <h2 id="hash-file-label">File</h2>
-              <button type="button" className="wb-button-plain" onClick={() => { setFile(null); setFileError(""); }} disabled={!file}>Clear</button>
+              <button type="button" className="wb-button-plain" onClick={clearFile} disabled={!file && !fileError}>Clear</button>
             </div>
             <label className="wb-drop" data-over={over ? "true" : undefined} onDragOver={(event) => { event.preventDefault(); setOver(true); }} onDragLeave={() => setOver(false)} onDrop={drop}>
-              {file ? <><strong>{file.name}</strong><span>{formatSize(file.size)} · choose another or drop it here</span></> : <><strong>Choose a file</strong><span>or drop it here. It stays on this device.</span></>}
-              <input className="wb-sr" type="file" onChange={(event) => void pick(event.target.files?.[0])} />
+              {file ? <><strong>{file.name}</strong><span>{formatSize(file.size)}{file.data ? "" : " · reading…"} · choose another or drop it here</span></> : <><strong>Choose a file</strong><span>or drop it here. It stays on this device.</span></>}
+              <input ref={fileInput} className="wb-sr" type="file" onChange={(event) => void pick(event.target.files?.[0])} />
             </label>
             {fileError ? <p className="wb-error" role="alert"><AlertIcon />{fileError}</p> : <p className="wb-pane-meta">Up to 512 MB.</p>}
           </section>
@@ -113,7 +131,7 @@ export default function HashTool() {
               {copied ? <><CheckIcon />Copied</> : <><CopyIcon />Copy</>}
             </button>
           </div>
-          <output className="wb-digest" htmlFor={source === "text" ? "hash-input" : undefined} data-empty={digest ? undefined : "true"}>{digest || (subject ? "Calculating…" : emptyText)}</output>
+          <output className="wb-digest" htmlFor={source === "text" ? "hash-input" : undefined} data-empty={digest ? undefined : "true"}>{digest || hashError || (subject || file ? "Calculating…" : emptyText)}</output>
           <CopyBlocked show={blocked} what="the hash" />
           <p className="wb-pane-meta">{FORMAT_NOTE[format](BITS[algorithm])}</p>
         </section>

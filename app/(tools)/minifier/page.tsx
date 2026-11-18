@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { AlertIcon, CheckIcon, CopyBlocked, CopyIcon, Segmented, ToolIntro, UndoToast, useCopy, useUndo, Workbench } from "@/components/workbench";
-import { MODES, SAMPLES, mayHaveRegexLiteral, minify, type Mode } from "@/lib/minifier/minify";
+import { MODES, SAMPLES, minify, type Mode } from "@/lib/minifier/minify";
 
 const LABEL: Record<Mode, string> = { json: "JSON", css: "CSS", html: "HTML", js: "JavaScript" };
 const OPTIONS = MODES.map((value) => ({ value, label: value === "js" ? "JS" : LABEL[value] }));
@@ -29,7 +29,7 @@ export default function MinifierTool() {
 
   // Switching language swaps in that language's sample only if you have not typed your own code.
   const chooseMode = (next: Mode) => {
-    if ((!input.trim() && !cleared) || input === SAMPLES[mode]) setInput(SAMPLES[next]);
+    if ((!input.trim() && !cleared) || input === SAMPLES[mode]) { setInput(SAMPLES[next]); undo.dismiss(); }
     setMode(next);
   };
   const clear = () => {
@@ -37,7 +37,6 @@ export default function MinifierTool() {
     setInput(""); setCleared(true);
     undo.offer("Code cleared.", () => { setInput(before); setCleared(false); });
   };
-  const regexWarning = mode === "js" && Boolean(output) && mayHaveRegexLiteral(input);
   const before = bytes(input);
   const after = bytes(output);
   const saved = before && output ? Math.max(0, Math.round((1 - after / before) * 100)) : 0;
@@ -56,7 +55,7 @@ export default function MinifierTool() {
             <label htmlFor="min-input">{LABEL[mode]}</label>
             <button type="button" className="wb-button-plain" onClick={clear} disabled={!input}>Clear</button>
           </div>
-          <textarea id="min-input" value={input} onChange={(event) => { setInput(event.target.value); setCleared(false); }} placeholder={`Paste ${LABEL[mode]}`} aria-invalid={error ? true : undefined} aria-describedby={error ? "min-error" : "min-input-meta"} spellCheck={false} autoComplete="off" />
+          <textarea id="min-input" value={input} onChange={(event) => { setInput(event.target.value); setCleared(false); undo.dismiss(); }} placeholder={`Paste ${LABEL[mode]}`} aria-invalid={error ? true : undefined} aria-describedby={error ? "min-error" : "min-input-meta"} spellCheck={false} autoComplete="off" />
           {error ? (
             <p id="min-error" className="wb-error" role="alert"><AlertIcon />{error}</p>
           ) : (
@@ -73,7 +72,6 @@ export default function MinifierTool() {
           </div>
           <textarea id="min-output" value={output} readOnly placeholder="The minified code appears here as you type" aria-describedby="min-output-meta" spellCheck={false} />
           <CopyBlocked show={blocked} />
-          {regexWarning ? <p className="wb-note wb-note-alert wb-pane-note"><AlertIcon />This code may contain a regular expression literal (/…/). Spaces and // inside it are not protected: check the result.</p> : null}
           <p id="min-output-meta" className="wb-pane-meta wb-stats">
             <span>{after.toLocaleString("en")} bytes</span>
             {output ? <span><strong>{saved}% smaller</strong></span> : null}
@@ -83,7 +81,7 @@ export default function MinifierTool() {
       <p className="wb-sr" role="status" aria-live="polite">{announcement}</p>
       <UndoToast state={undo} />
 
-      <p className="wb-hint">A simple whitespace and comment stripper for snippets and demos, not a production compiler. Strings and template literals are kept exactly; regular expression literals are not parsed, and line breaks are removed, so code that relies on automatic semicolons may break.</p>
+      <p className="wb-hint">A simple whitespace and comment stripper for snippets and demos, not a production compiler. Strings, template literals and regular expression literals are kept exactly. Line breaks are removed, so code that relies on automatic semicolons may break.</p>
     </Workbench>
   );
 }

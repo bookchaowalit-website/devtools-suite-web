@@ -68,41 +68,68 @@ export function groupNames(pattern: string): (string | undefined)[] {
 /** Longest replace result built; the rest of the text is left as it was and the result says it stopped. */
 export const MAX_REPLACE_OUTPUT = 200_000;
 
+/** One piece of a parsed replacement template. */
+export type TemplatePart = { literal: string } | { match: true } | { before: true } | { after: true } | { group: number } | { name: string };
+
 /**
- * A replacement template expanded for one match, as String#replace does: $$, $&, $`, $', $1–$99 and $<name>.
- * With `limit`, expansion stops once the piece reaches that many characters ($` and $' can each be the whole text),
- * and `complete` is false.
+ * Parses a replacement template once, in one left-to-right pass (linear in its length), following
+ * GetSubstitution in the ECMAScript spec: $$, $&, $`, $', $n and $nn (two digits win when that group exists),
+ * and $<name> only when the pattern has named groups; otherwise "$<" is plain text and scanning goes on after it.
  */
-export function expandReplacement(template: string, match: string, groups: (string | undefined)[], offset: number, text: string, named?: Record<string, string | undefined>, limit = Infinity): { value: string; complete: boolean } {
-  let out = "";
-  let last = 0;
-  const add = (piece: string) => {
-    if (out.length + piece.length > limit) { out += piece.slice(0, Math.max(0, limit - out.length)); return false; }
-    out += piece;
-    return true;
-  };
-  const token = /\$(\$|&|`|'|\d{1,2}|<([^>]*)>)/g;
-  for (let found = token.exec(template); found; found = token.exec(template)) {
-    if (!add(template.slice(last, found.index))) return { value: out, complete: false };
-    last = found.index + found[0].length;
-    const [whole, what, name] = found;
-    let piece: string;
-    if (what === "$") piece = "$";
-    else if (what === "&") piece = match;
-    // Slice at most one character past the budget, so a long $` or $' is never copied whole just to be cut.
-    else if (what === "`") piece = text.slice(0, Math.min(offset, limit - out.length + 1));
-    else if (what === "'") piece = text.slice(offset + match.length, offset + match.length + Math.min(text.length, limit - out.length + 1));
-    else if (name !== undefined) piece = named ? named[name] ?? "" : whole;
-    else {
-      // $12 means group 12 when it exists, otherwise group 1 followed by "2"; $0 and missing groups stay literal.
-      const two = Number(what);
-      const one = Number(what[0]);
-      piece = what.length === 2 && two >= 1 && two <= groups.length ? groups[two - 1] ?? ""
-        : one >= 1 && one <= groups.length ? (groups[one - 1] ?? "") + what.slice(1) : whole;
-    }
-    if (!add(piece)) return { value: out, complete: false };
+export function parseTemplate(template: string, groupCount: number, hasNamedGroups: boolean): TemplatePart[] {
+  const parts: TemplatePart[] = [];
+  let text = "";
+  // A "$<" after the last ">" can never close: known up front, so a template of many "$<" stays linear.
+  const lastClose = template.lastIndexOf(">");
+  const push = (part: TemplatePart) => { if (text) { parts.push({ literal: text }); text = ""; } parts.push(part); };
+  for (let i = 0; i < template.length; i += 1) {
+    const char = template[i];
+    if (char !== "$" || i + 1 >= template.length) { text += char; continue; }
+    const next = template[i + 1];
+    if (next === "$") { text += "$"; i += 1; }
+    else if (next === "&") { push({ match: true }); i += 1; }
+    else if (next === "`") { push({ before: true }); i += 1; }
+    else if (next === "'") { push({ after: true }); i += 1; }
+    else if (next >= "0" && next <= "9") {
+      const two = template[i + 2] >= "0" && template[i + 2] <= "9" ? Number(next + template[i + 2]) : -1;
+      if (two >= 1 && two <= groupCount) { push({ group: two }); i += 2; }
+      else if (Number(next) >= 1 && Number(next) <= groupCount) { push({ group: Number(next) }); i += 1; }
+      else text += "$";
+    } else if (next === "<" && hasNamedGroups) {
+      // When a ">" follows, it is found once and the scan resumes after it, so every character is read at most twice.
+      const close = i + 2 <= lastClose ? template.indexOf(">", i + 2) : -1;
+      if (close === -1) { text += "$<"; i += 1; }
+      else { push({ name: template.slice(i + 2, close) }); i = close; }
+    } else text += "$";
   }
-  return add(template.slice(last)) ? { value: out, complete: true } : { value: out, complete: false };
+  if (text) parts.push({ literal: text });
+  return parts;
+}
+
+/**
+ * A parsed template expanded for one match. With `limit`, expansion stops once the piece reaches that many characters
+ * ($` and $' can each be the whole text) and `complete` is false.
+ */
+export function expandParts(parts: TemplatePart[], match: string, groups: (string | undefined)[], offset: number, text: string, named?: Record<string, string | undefined>, limit = Infinity): { value: string; complete: boolean } {
+  let out = "";
+  for (const part of parts) {
+    const room = limit - out.length;
+    // Slice at most one character past the budget, so a long $` or $' is never copied whole just to be cut.
+    const piece = "literal" in part ? part.literal
+      : "match" in part ? match
+        : "before" in part ? text.slice(0, Math.min(offset, room + 1))
+          : "after" in part ? text.slice(offset + match.length, offset + match.length + Math.min(text.length, room + 1))
+            : "group" in part ? groups[part.group - 1] ?? ""
+              : named?.[part.name] ?? "";
+    if (piece.length > room) return { value: out + piece.slice(0, Math.max(0, room)), complete: false };
+    out += piece;
+  }
+  return { value: out, complete: true };
+}
+
+/** One template expanded for one match, as String#replace does (parse + expand, for single use and tests). */
+export function expandReplacement(template: string, match: string, groups: (string | undefined)[], offset: number, text: string, named?: Record<string, string | undefined>, limit = Infinity): { value: string; complete: boolean } {
+  return expandParts(parseTemplate(template, groups.length, named !== undefined), match, groups, offset, text, named, limit);
 }
 
 /**
@@ -119,11 +146,14 @@ export function replaceAll(pattern: string, flags: string, text: string, replace
   let out = "";
   let cursor = 0;
   let count = 0;
+  // Parsed once for every match; the group count and named groups come from the pattern itself.
+  const shape = new RegExp(`${re.source}|`, re.flags.replace(/[gy]/g, "")).exec("");
+  const parts = parseTemplate(replacement, shape ? shape.length - 1 : 0, Boolean(shape?.groups));
   /** Appends one match's replacement within the output budget; false once the budget is used up. */
   const step = (match: RegExpExecArray): boolean => {
     out += text.slice(cursor, match.index).slice(0, Math.max(0, MAX_REPLACE_OUTPUT - out.length));
     if (out.length >= MAX_REPLACE_OUTPUT) return false;
-    const piece = expandReplacement(replacement, match[0], match.slice(1), match.index, text, match.groups, MAX_REPLACE_OUTPUT - out.length);
+    const piece = expandParts(parts, match[0], match.slice(1), match.index, text, match.groups, MAX_REPLACE_OUTPUT - out.length);
     out += piece.value;
     cursor = match.index + match[0].length;
     count += 1;

@@ -226,3 +226,20 @@ describe("/regex focus order", () => {
     expect(html).toContain('class="is-alt"');
   });
 });
+
+// Codex review, 2026-11-19 (post-push round).
+describe("focus order and storage scope", () => {
+  it("/colorpicker puts the values before the editor in the DOM, with no CSS reordering", () => {
+    const html = renderToString(<ColorPickerTool />);
+    expect(html.indexOf('aria-label="Color values"')).toBeLessThan(html.indexOf('id="edit-title"'));
+    const css = readFileSync(new URL("../app/workbench.css", import.meta.url), "utf8");
+    expect(css).not.toMatch(/(^|[;{\s])order:/m);
+  });
+
+  it("/markdown-editor keeps nothing in the browser until you turn it on", () => {
+    const html = renderToString(<MarkdownEditorTool />);
+    expect(html).toMatch(/<input type="checkbox" role="switch"\/?>|<input type="checkbox" role="switch" value="on"/);
+    expect(html).toContain("Keep draft in this browser");
+    expect(html).toContain("Off: the text is gone when you close the tab.");
+  });
+});

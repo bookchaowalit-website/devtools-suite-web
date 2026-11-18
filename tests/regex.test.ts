@@ -101,3 +101,26 @@ test("the size cap applies while a template expands ($` and $' of a long text)",
   assert.equal(result.value.length <= MAX_REPLACE_OUTPUT, true);
   assert.equal(expandReplacement("[$&]", "a", [], 0, "a").value, "[a]");
 });
+
+// Codex review, 2026-11-19 (post-push round): token rules exactly as String.prototype.replace.
+test("replace templates match String#replace, including $< without named groups", async () => {
+  const { replaceAll } = await import("@/lib/regex/run");
+  const cases: [string, string, string, string][] = [
+    ["(x)", "g", "x", "$<$&>"],
+    ["(?<n>x)", "g", "x", "$<n>|$<missing>|$<n"],
+    ["(a)(b)(c)(d)(e)(f)(g)(h)(i)(j)(k)", "", "abcdefghijk", "$11|$10|$1|$01|$00|$0|$12"],
+    ["(a)", "g", "aa", "$$$&$`$'$"],
+    ["b", "", "abc", "$1$<x>"],
+  ];
+  for (const [pattern, flags, text, template] of cases) {
+    assert.equal(replaceAll(pattern, flags, text, template).value, text.replace(new RegExp(pattern, flags), template), `${pattern} ${template}`);
+  }
+});
+
+test("a long template full of $< is parsed in linear time", async () => {
+  const { parseTemplate } = await import("@/lib/regex/run");
+  const template = "$<".repeat(200_000);
+  const started = performance.now();
+  assert.equal(parseTemplate(template, 1, true).length, 1);
+  assert.ok(performance.now() - started < 500);
+});

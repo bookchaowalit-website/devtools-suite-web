@@ -66,7 +66,20 @@ export default function ColorPickerTool() {
           <span className="wb-swatch-value">{color.toUpperCase()}</span>
         </div>
 
-        <div className="wb-cards wb-color-values-first">
+        {/* Values (the main job: read and copy) come first in the DOM and on screen at every width, so Tab follows the page. */}
+        <div className="wb-cards">
+          <div className="wb-fields wb-fields-compact" role="group" aria-label="Color values">
+            {rows.map((row) => (
+              <div className="wb-field" key={row.key}>
+                <span className="wb-field-label">{row.label}</span>
+                <code>{row.value}</code>
+                <button type="button" className="wb-button-plain" onClick={() => { setCopiedKey(row.key); void copy(row.value); }} aria-label={`Copy ${row.label} value`}>
+                  {copied && copiedKey === row.key ? <><CheckIcon />Copied</> : <><CopyIcon />Copy</>}
+                </button>
+              </div>
+            ))}
+            <CopyBlocked show={blocked} what="the value" />
+          </div>
           <section className="wb-card" aria-labelledby="edit-title">
             <h2 id="edit-title">Edit</h2>
             <div className="wb-inputs">
@@ -92,18 +105,6 @@ export default function ColorPickerTool() {
             </p>
           </section>
 
-          <div className="wb-fields wb-fields-compact" role="group" aria-label="Color values">
-            {rows.map((row) => (
-              <div className="wb-field" key={row.key}>
-                <span className="wb-field-label">{row.label}</span>
-                <code>{row.value}</code>
-                <button type="button" className="wb-button-plain" onClick={() => { setCopiedKey(row.key); void copy(row.value); }} aria-label={`Copy ${row.label} value`}>
-                  {copied && copiedKey === row.key ? <><CheckIcon />Copied</> : <><CopyIcon />Copy</>}
-                </button>
-              </div>
-            ))}
-            <CopyBlocked show={blocked} what="the value" />
-          </div>
         </div>
       </div>
       <p className="wb-sr" role="status" aria-live="polite">{announcement}</p>

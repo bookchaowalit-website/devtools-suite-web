@@ -1,7 +1,7 @@
 "use client";
 
 import { useMemo, useRef, useState } from "react";
-import { AlertIcon, ToolIntro, Workbench } from "@/components/workbench";
+import { AlertIcon, ToolIntro, UndoToast, useUndo, Workbench } from "@/components/workbench";
 import { addRun, MAX_RUNS, normalizeTarget, runAnnouncement, summarize, TIMEOUT_MS, type Run } from "@/lib/latency-test/latency";
 
 const BATCH = 5;
@@ -16,6 +16,7 @@ export default function LatencyTool() {
   const [progress, setProgress] = useState("");
   const [announcement, setAnnouncement] = useState("");
   const runsRef = useRef<Run[]>([]);
+  const undo = useUndo();
   const summary = useMemo(() => summarize(runs), [runs]);
   const latest = runs[0];
 
@@ -54,7 +55,12 @@ export default function LatencyTool() {
     }
     return { ms: Math.round(performance.now() - started), ok, at: Date.now(), target: target.host, opaque: !sameOrigin };
   }
-  const clearHistory = () => { runsRef.current = []; setRuns([]); setAnnouncement("History cleared."); };
+  // Undo puts the cleared runs back after any run made since (newest first, still capped at MAX_RUNS).
+  const clearHistory = () => {
+    const cleared = runsRef.current;
+    runsRef.current = []; setRuns([]);
+    undo.offer("History cleared.", () => { runsRef.current = [...runsRef.current, ...cleared].slice(0, MAX_RUNS); setRuns(runsRef.current); });
+  };
 
   return (
     <Workbench>
@@ -105,6 +111,8 @@ export default function LatencyTool() {
           <p className="wb-note">No tests yet. Press Test to time the first request.</p>
         )}
       </section>
+
+      <UndoToast state={undo} />
 
       <p className="wb-hint">Timing includes DNS, connection and server time as seen by this browser. Cross-site requests can only report that a response arrived, not its status, so they are marked “response not readable”. History is kept only until you reload. Failed requests are left out of the average. Times out after {TIMEOUT_MS / 1000} s.</p>
     </Workbench>

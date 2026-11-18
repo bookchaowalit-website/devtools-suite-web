@@ -63,3 +63,10 @@ test("errors say the line and column and give the offset to jump to", () => {
   // Older engines only say "at position N".
   assert.deepEqual(describeProblem("[1,]", new SyntaxError("Unexpected token ] in JSON at position 3")).line, 1);
 });
+
+test("reads Firefox's error position too", () => {
+  const input = '{\n  "a": 1\n  "b": 2\n}';
+  const problem = describeProblem(input, new SyntaxError("JSON.parse: expected ',' or '}' after property value in object at line 3 column 3 of the JSON data"));
+  assert.equal(problem.message, "Line 3, column 3: Expected ',' or '}' after property value in object.");
+  assert.equal(input.slice(problem.offset ?? 0, (problem.offset ?? 0) + 3), '"b"');
+});

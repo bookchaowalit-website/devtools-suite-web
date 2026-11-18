@@ -64,15 +64,16 @@ export function describeProblem(input: string, cause: unknown): ParseProblem {
     return { message: `Line ${line}, column ${column}: ${sentence(reason ?? "this YAML is not valid")}`, line, column, offset: typeof mark.position === "number" ? mark.position : offsetOf(input, line, column) };
   }
   const text = cause instanceof Error ? cause.message : String(cause ?? "");
-  const lineMatch = /\(line (\d+) column (\d+)\)/.exec(text);
+  // V8: "... (line 4 column 3)"; Firefox: "... at line 4 column 3 of the JSON data".
+  const lineMatch = /\(line (\d+) column (\d+)\)|at line (\d+) column (\d+) of the JSON data/.exec(text);
   const position = /at position (\d+)/.exec(text);
-  const core = text.replace(/\s*\(line \d+ column \d+\)/, "").replace(/ in JSON at position \d+/, "").replace(/^JSON\.parse: /, "").trim();
+  const core = text.replace(/\s*\(line \d+ column \d+\)/, "").replace(/ at line \d+ column \d+ of the JSON data/, "").replace(/ in JSON at position \d+/, "").replace(/^JSON\.parse: /, "").trim();
   if (/Unexpected end of JSON input/i.test(core)) {
     const where = lineColumn(input, input.length);
     return { message: `Line ${where.line}, column ${where.column}: the JSON ends too early. A closing } or ] or a quote may be missing.`, ...where, offset: input.length };
   }
   if (lineMatch || position) {
-    const where = lineMatch ? { line: Number(lineMatch[1]), column: Number(lineMatch[2]) } : lineColumn(input, Number(position?.[1]));
+    const where = lineMatch ? { line: Number(lineMatch[1] ?? lineMatch[3]), column: Number(lineMatch[2] ?? lineMatch[4]) } : lineColumn(input, Number(position?.[1]));
     const offset = position ? Number(position[1]) : offsetOf(input, where.line, where.column);
     return { message: `Line ${where.line}, column ${where.column}: ${sentence(core)}`, ...where, offset };
   }

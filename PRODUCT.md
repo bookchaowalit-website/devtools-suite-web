@@ -61,4 +61,5 @@ Front-end and server errors go to Sentry (errors only, personal data stripped) w
 ## Boundaries
 
 - No accounts, no server storage, no analytics or tracking scripts (removed 2026-11-17). Only the clipboard manager
-  writes to `localStorage`.
+  writes to `localStorage` by default; the Markdown editor writes its draft there only after you turn on
+  "Keep draft in this browser" (off by default, 2026-11-19), and turning it off removes the draft.

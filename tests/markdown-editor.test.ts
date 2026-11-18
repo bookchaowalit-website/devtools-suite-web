@@ -42,3 +42,8 @@ test("numbered lists, nesting, headings 4–6 and tables", () => {
 test("a heading offset keeps the page's single h1 and the written size", () => {
   assert.equal(renderMarkdown("# Title\n## Part\n###### Deep", { headingOffset: 1 }), '<h2 class="md-h1">Title</h2><h3 class="md-h2">Part</h3><h6 class="md-h6">Deep</h6>');
 });
+
+test("a table ends where the next block starts", () => {
+  assert.equal(renderMarkdown("| A |\n| - |\n| 1 |\n## C | D"), '<table><thead><tr><th scope="col">A</th></tr></thead><tbody><tr><td>1</td></tr></tbody></table><h2>C | D</h2>');
+  assert.equal(renderMarkdown("| A |\n| - |\n- x | y"), '<table><thead><tr><th scope="col">A</th></tr></thead><tbody></tbody></table><ul><li>x | y</li></ul>');
+});

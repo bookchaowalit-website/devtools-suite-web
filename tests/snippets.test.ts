@@ -29,3 +29,14 @@ test("each category has at least five snippets and every language has a title-ca
   for (const snippet of SNIPPETS) assert.match(languageLabel(snippet.language), /^[A-Z]/, snippet.id);
   assert.equal(languageLabel("jsx"), "React · JSX");
 });
+
+// Codex review, 2026-11-19 (post-push round): the sample code itself must be safe to reuse.
+test("groupBy works for keys such as constructor, and useLocalStorage never writes one key's value into another", async () => {
+  const groupBy = SNIPPETS.find((snippet) => snippet.title === "groupBy");
+  assert.ok(groupBy);
+  const js = groupBy.code.replace(/export /, "").replace(/<T, K extends PropertyKey>|: readonly T\[\]|: \(item: T\) => K|: Map<K, T\[\]>|<K, T\[\]>/g, "");
+  const run = new Function(`${js}; return groupBy;`)() as (items: string[], key: (item: string) => string) => Map<string, string[]>;
+  assert.deepEqual([...run(["a", "b"], (item) => (item === "a" ? "constructor" : "toString")).entries()], [["constructor", ["a"]], ["toString", ["b"]]]);
+  const storage = SNIPPETS.find((snippet) => snippet.title === "useLocalStorage");
+  assert.match(storage?.code ?? "", /if \(state\.key !== key\) return;/);
+});

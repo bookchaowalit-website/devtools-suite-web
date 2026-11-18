@@ -73,7 +73,9 @@ export function renderMarkdown(source: string, { headingOffset = 0 }: { headingO
       const head = cells(line);
       const rows: string[][] = [];
       index += 2;
-      while (index < lines.length && lines[index].includes("|") && lines[index].trim()) rows.push(cells(lines[index++]));
+      // A row needs a "|" and must not open another block (heading, list, quote or code fence).
+      const blockStart = /^(#{1,6} |\s*[-*+] |\s*\d{1,9}[.)] |&gt; |```)/;
+      while (index < lines.length && lines[index].includes("|") && lines[index].trim() && !blockStart.test(lines[index])) rows.push(cells(lines[index++]));
       index -= 1;
       const row = (values: string[], tag: "th" | "td") => `<tr>${head.map((_, column) => `<${tag}${tag === "th" ? ' scope="col"' : ""}>${inline(values[column] ?? "")}</${tag}>`).join("")}</tr>`;
       output.push(`<table><thead>${row(head, "th")}</thead><tbody>${rows.map((values) => row(values, "td")).join("")}</tbody></table>`);
