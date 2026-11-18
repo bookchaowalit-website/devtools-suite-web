@@ -31,7 +31,9 @@ describe("validateCron", () => {
     expect(validateCron("0 0 1/2 * *")).toEqual({ ok: false, field: 2, message: "Day of month step “1/2” needs * or a range before the /; write 1-31/2 or */2." });
     expect(checkField("5-1", 1)).toMatch(/runs backwards/);
     expect(checkField("1,,2", 1)).toMatch(/empty list item/);
-    expect(checkField("MON", 4)).toMatch(/is not a number, range/);
+    expect(checkField("MONDAY", 4)).toMatch(/is not a number, range/);
+    expect(checkField("MON", 3)).toMatch(/is not a number, range/); // weekday names only in the weekday field
+    expect(checkField("JAN", 4)).toMatch(/is not a number, range/);
     expect(checkField("-1", 0)).toMatch(/is not a number, range/);
   });
 
@@ -89,5 +91,33 @@ describe("describe and nextRuns", () => {
     expect(sundays).toEqual(nextRuns("0 12 * * 0", 3));
     expect(sundays).toHaveLength(3);
     expect(nextRuns("0 9 * * 1-5", 5)).toHaveLength(5);
+  });
+});
+
+// crontab takes month and weekday names, case-insensitive, alone, in lists and in ranges (Codex review, 2026-11-19).
+describe("month and weekday names", () => {
+  beforeEach(() => { vi.useFakeTimers(); vi.setSystemTime(new Date(2026, 10, 16, 8, 0)); }); // Monday 16 Nov 2026
+  afterEach(() => vi.useRealTimers());
+  const at = (month: number, day: number, hour: number, minute: number) => new Date(2026, month, day, hour, minute).toLocaleString([], { dateStyle: "medium", timeStyle: "short" });
+
+  it("accepts JAN–DEC and SUN–SAT in any case, in lists and ranges", () => {
+    for (const expr of ["0 9 * * MON-FRI", "0 9 * * mon-fri", "0 9 * * Sun,sat", "0 0 1 JAN,jul *", "0 0 1 mar-May *", "0 9 * * MON-FRI/2", "0 9 * * 1-FRI"]) {
+      expect(validateCron(expr), expr).toEqual({ ok: true });
+    }
+    expect(checkField("SUN-SAT", 4)).toBeNull();
+    expect(checkField("FRI-MON", 4)).toMatch(/runs backwards/);
+    expect(checkField("MON/2", 4)).toMatch(/needs \* or a range/);
+  });
+
+  it("runs on the named days and months", () => {
+    expect(nextRuns("0 9 * * MON-FRI", 3)).toEqual([at(10, 16, 9, 0), at(10, 17, 9, 0), at(10, 18, 9, 0)]);
+    expect(nextRuns("0 9 * * sat,SUN", 2)).toEqual([at(10, 21, 9, 0), at(10, 22, 9, 0)]);
+    expect(nextRuns("0 0 1 jan *", 1)).toEqual([new Date(2027, 0, 1, 0, 0).toLocaleString([], { dateStyle: "medium", timeStyle: "short" })]);
+    expect(nextRuns("0 9 * * MON-FRI", 3)).toEqual(nextRuns("0 9 * * 1-5", 3));
+  });
+
+  it("describes them in plain English", () => {
+    expect(describeCron("0 9 * * MON-FRI")).toBe("at 09:00; every day · all months · weekday MON-FRI");
+    expect(describeCron("0 0 1 JAN *")).toBe("at 00:00; day 1 · month JAN · all weekdays");
   });
 });

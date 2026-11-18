@@ -13,6 +13,24 @@ export type CronCheck = { ok: true } | { ok: false; field: number | null; messag
 
 const NUMBER = /^\d+$/;
 
+/** Names crontab accepts, case-insensitive: JAN–DEC in the month field (1–12), SUN–SAT in the weekday field (0–6). */
+const NAMES: Partial<Record<number, readonly string[]>> = {
+  3: ["JAN", "FEB", "MAR", "APR", "MAY", "JUN", "JUL", "AUG", "SEP", "OCT", "NOV", "DEC"],
+  4: ["SUN", "MON", "TUE", "WED", "THU", "FRI", "SAT"],
+};
+
+/** One end of a range as a number string: a month or weekday name becomes its number, anything else is unchanged. */
+function nameToNumber(end: string, index: number): string {
+  const names = NAMES[index];
+  const at = names ? names.indexOf(end.toUpperCase()) : -1;
+  return at === -1 ? end : String(index === 3 ? at + 1 : at);
+}
+
+/** A field with every month or weekday name replaced by its number, so the matcher only sees numbers. */
+function numericField(field: string, index: number): string {
+  return NAMES[index] ? field.replace(/[A-Za-z]+/g, (name) => nameToNumber(name, index)) : field;
+}
+
 /** Checks one field (lists, ranges, steps, *) against its range; returns an error sentence or null. */
 export function checkField(text: string, index: number): string | null {
   const { label, min, max } = FIELD_RANGES[index];
@@ -24,7 +42,7 @@ export function checkField(text: string, index: number): string | null {
     const [range, step] = pieces;
     if (step !== undefined && (!NUMBER.test(step) || Number(step) < 1)) return `${label} step “/${step}” must be a whole number of 1 or more.`;
     if (range === "*") continue;
-    const ends = range.split("-");
+    const ends = range.split("-").map((end) => nameToNumber(end, index));
     if (ends.length > 2 || ends.some((end) => !NUMBER.test(end))) return `${label} “${part}” is not a number, range (1-5), list (1,15) or step (*/10).`;
     for (const end of ends) if (Number(end) < min || Number(end) > max) return `${allowed}; ${end} is out of range.`;
     // Standard crontab allows a step only after * or a range: 5/20 is refused by crontab, so refuse it here too.
@@ -90,7 +108,7 @@ function allowedValues(field: string, min: number, max: number): boolean[] {
 
 export function nextRuns(expr: string, count = 5) {
   if (!validateCron(expr).ok) return [];
-  const [minute, hour, dom, month, dow] = expr.trim().split(/\s+/);
+  const [minute, hour, dom, month, dow] = expr.trim().split(/\s+/).map(numericField);
   const minutes = allowedValues(minute, 0, 59);
   const hours = allowedValues(hour, 0, 23);
   const days = allowedValues(dom, 1, 31);
