@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import { test } from "vitest";
-import { transformDocument, jsonToYaml, yamlToJson } from "@/lib/jsonconverter/conversion";
+import { describeProblem, offsetOf, transformDocument, jsonToYaml, yamlToJson } from "@/lib/jsonconverter/conversion";
 
 test("formats and minifies valid JSON without changing its values", () => {
   const source = '{ "name": "book", "active": true, "count": 2 }';
@@ -38,4 +38,28 @@ test("keeps JSON-compatible YAML scalars and quoted non-finite text intact", () 
   assert.deepEqual(JSON.parse(transformDocument('score: 1.25\nzero: 0\nnegative: -2\nflag: false\nempty: null\ntext: ".nan"\nitems: [".inf", 3]\nlargeText: 1e999', "YAML → JSON")), {
     score: 1.25, zero: 0, negative: -2, flag: false, empty: null, text: ".nan", items: [".inf", 3], largeText: "1e999",
   });
+});
+
+test("indent option: 2 spaces, 4 spaces or a tab", () => {
+  const source = '{"a":[1]}';
+  assert.equal(transformDocument(source, "PRETTY", "4"), '{\n    "a": [\n        1\n    ]\n}');
+  assert.equal(transformDocument(source, "PRETTY", "tab"), '{\n\t"a": [\n\t\t1\n\t]\n}');
+  assert.equal(transformDocument("a:\n  - 1", "YAML → JSON", "4"), '{\n    "a": [\n        1\n    ]\n}');
+  assert.equal(transformDocument('{"a":{"b":1}}', "JSON → YAML", "4"), "a:\n    b: 1");
+});
+
+test("errors say the line and column and give the offset to jump to", () => {
+  const input = '{\n  "a": 1\n  "b": 2\n}';
+  let problem;
+  try { JSON.parse(input); } catch (cause) { problem = describeProblem(input, cause); }
+  assert.ok(problem);
+  assert.match(problem.message, /^Line 3, column 3: Expected ',' or '}' after property value\.$/);
+  assert.equal(problem.line, 3);
+  assert.equal(input.slice(problem.offset ?? 0, (problem.offset ?? 0) + 3), '"b"');
+  try { JSON.parse("[1, 2"); } catch (cause) { assert.match(describeProblem("[1, 2", cause).message, /^Line 1, column 6: /); }
+  assert.match(describeProblem("{", new SyntaxError("Unexpected end of JSON input")).message, /^Line 1, column 2: the JSON ends too early/);
+  try { yamlToJson("a: [1, 2"); } catch (cause) { const yaml = describeProblem("a: [1, 2", cause); assert.match(yaml.message, /^Line \d+, column \d+: /); assert.notEqual(yaml.line, null); }
+  assert.equal(offsetOf("ab\ncd", 2, 2), 4);
+  // Older engines only say "at position N".
+  assert.deepEqual(describeProblem("[1,]", new SyntaxError("Unexpected token ] in JSON at position 3")).line, 1);
 });

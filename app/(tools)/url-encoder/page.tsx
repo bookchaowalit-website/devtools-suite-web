@@ -1,8 +1,8 @@
 "use client";
 
-import { useState } from "react";
-import { AlertIcon, CheckIcon, CopyIcon, Segmented, SwapIcon, ToolIntro, useCopy, Workbench } from "@/components/workbench";
-import { convert, inspectQuery, type Mode, type QueryResult } from "@/lib/url-encoder/codec";
+import { useMemo, useState } from "react";
+import { AlertIcon, CheckIcon, CopyBlocked, CopyIcon, Segmented, SwapIcon, ToolIntro, useCopy, Workbench } from "@/components/workbench";
+import { convert, inspectQuery, type Mode } from "@/lib/url-encoder/codec";
 
 type Direction = "encode" | "decode";
 type Scope = "component" | "uri";
@@ -18,7 +18,8 @@ export default function UrlEncoderTool() {
   const [direction, setDirection] = useState<Direction>("encode");
   const [scope, setScope] = useState<Scope>("component");
   const [plusAsSpace, setPlusAsSpace] = useState(false);
-  const [query, setQuery] = useState<QueryResult | null>(null);
+  // null follows the input (shown when it has a "?"); true or false once you press Show or Hide.
+  const [showQuery, setShowQuery] = useState<boolean | null>(null);
   const [announcement, setAnnouncement] = useState("");
 
   const mode = `${scope}-${direction}` as Mode;
@@ -26,7 +27,7 @@ export default function UrlEncoderTool() {
   const result = convert(mode, input, plusAsSpace);
   const output = result.ok ? result.value : "";
   const error = result.ok ? "" : result.error;
-  const { copied, copy } = useCopy(output, (ok) => setAnnouncement(ok ? "Result copied to the clipboard." : "Copy was blocked. Select the result and copy it by hand."));
+  const { copied, blocked, copy } = useCopy(output, (ok) => setAnnouncement(ok ? "Result copied to the clipboard." : "Copy was blocked. Select the result and copy it by hand."));
   const inputLabel = direction === "encode" ? "Text" : "Encoded";
   const outputLabel = direction === "encode" ? "Encoded" : "Text";
 
@@ -34,10 +35,12 @@ export default function UrlEncoderTool() {
     if (!output) return;
     setInput(output);
     setDirection(direction === "encode" ? "decode" : "encode");
-    setQuery(null);
     setAnnouncement(`Swapped. Now ${direction === "encode" ? "decoding" : "encoding"}.`);
   };
-  const edit = (value: string) => { setInput(value); setQuery(null); };
+  const edit = (value: string) => setInput(value);
+  const queryVisible = (showQuery ?? input.includes("?")) && Boolean(input.trim());
+  // Live: the table follows the input while it is shown.
+  const query = useMemo(() => (queryVisible ? inspectQuery(input) : null), [queryVisible, input]);
 
   return (
     <Workbench>
@@ -48,12 +51,11 @@ export default function UrlEncoderTool() {
           <Segmented label="Direction" options={DIRECTIONS} value={direction} onChange={setDirection} />
           <Segmented label="What you are encoding" options={SCOPES} value={scope} onChange={setScope} />
         </div>
-        {direction === "decode" ? (
-          <label className="wb-switch">
-            <input type="checkbox" role="switch" checked={plusAsSpace} onChange={(event) => setPlusAsSpace(event.target.checked)} />
-            <span>Treat + as space<small>For HTML form data</small></span>
-          </label>
-        ) : null}
+        {/* Always rendered (disabled while encoding) so switching direction never moves the panes. */}
+        <label className="wb-switch">
+          <input type="checkbox" role="switch" checked={direction === "decode" && plusAsSpace} disabled={direction !== "decode"} onChange={(event) => setPlusAsSpace(event.target.checked)} />
+          <span>Treat + as space<small>{direction === "decode" ? "For HTML form data" : "Decoding only"}</small></span>
+        </label>
       </div>
       <p className="wb-hint wb-hint-top">{SCOPE_HINT[scope]}</p>
 
@@ -88,14 +90,15 @@ export default function UrlEncoderTool() {
               </button>
             </div>
           </div>
-          <textarea id="url-output" value={output} readOnly placeholder="The result appears here as you type" spellCheck={false} />
+          <textarea id="url-output" value={output} readOnly placeholder={error ? "Fix the input to see the result" : "The result appears here as you type"} spellCheck={false} />
+          <CopyBlocked show={blocked} />
         </section>
       </div>
       <p className="wb-sr" role="status" aria-live="polite">{announcement}</p>
 
       <div className="wb-actions">
-        <button type="button" className="wb-button-plain" onClick={() => setQuery(inspectQuery(input))} disabled={!input.trim()}>
-          Show query parameters
+        <button type="button" className="wb-button-plain" onClick={() => setShowQuery(!queryVisible)} disabled={!input.trim()} aria-expanded={queryVisible}>
+          {queryVisible ? "Hide query parameters" : "Show query parameters"}
         </button>
       </div>
       {query ? (

@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
-import { test } from "vitest";
+import { expect, test } from "vitest";
 import { parseInteger } from "@/lib/number-converter/conversion";
-import { editField, initialFields, shownValue } from "@/lib/number-converter/fields";
+import { copyValue, editField, groupDigits, initialFields, shownValue } from "@/lib/number-converter/fields";
 
 test("parses all four supported bases and optional hexadecimal prefixes", () => {
   for (const [raw, radix] of [["1010", 2], ["12", 8], ["10", 10], ["a", 16], ["0xA", 16]] as const) assert.equal(parseInteger(raw, radix), BigInt(10));
@@ -44,4 +44,19 @@ test("a valid edit clears the draft and syncs all four; clearing a field empties
   state = editField(state, "oct", "  ");
   assert.equal(state.draft, null);
   assert.deepEqual(state.valid, { bin: "", oct: "", dec: "", hex: "" });
+});
+
+test("binary and hex read in nibbles; separators and prefixes are accepted back", () => {
+  expect(groupDigits("11111111", "bin")).toBe("1111 1111");
+  expect(groupDigits("-ffffffffffffffff", "hex")).toBe("-ffff ffff ffff ffff");
+  expect(groupDigits("101", "bin")).toBe("101");
+  expect(groupDigits("1234567", "dec")).toBe("1234567");
+  expect(parseInteger("1111 1111", 2)).toBe(BigInt(255));
+  expect(parseInteger("0b1010", 2)).toBe(BigInt(10));
+  expect(parseInteger("0o17", 8)).toBe(BigInt(15));
+  expect(parseInteger("-0xff_ff", 16)).toBe(BigInt(-65535));
+  expect(copyValue("ff", "hex", true)).toBe("0xff");
+  expect(copyValue("-1010", "bin", true)).toBe("-0b1010");
+  expect(copyValue("12", "dec", true)).toBe("12");
+  expect(copyValue("ff", "hex", false)).toBe("ff");
 });

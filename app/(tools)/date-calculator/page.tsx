@@ -35,21 +35,23 @@ export default function DateCalculatorTool() {
       <div className="wb-cards">
         <section className="wb-card" aria-labelledby="between-title">
           <h2 id="between-title">Days between</h2>
-          <div className="wb-inputs">
+          {!isClient ? <p className="wb-note wb-note-top" role="status">Loading today’s date…</p> : null}
+          {/* Start and End stay side by side on phones, so both cards fit higher up the screen. */}
+          <div className="wb-inputs wb-inputs-pair">
             <label className="wb-input">Start<input type="date" value={startValue} onChange={(event) => setStart(event.target.value)} /></label>
             <label className="wb-input">End<input type="date" value={endValue} onChange={(event) => setEnd(event.target.value)} /></label>
           </div>
-          <dl className="wb-figures" aria-live="polite">
+          <dl className="wb-figures wb-figures-3" aria-live="polite">
             <div><dt>Days</dt><dd>{diff ? diff.days : "—"}</dd></div>
-            <div><dt>Weeks</dt><dd>{diff ? diff.weeks : "—"}</dd></div>
-            <div><dt>Months (about)</dt><dd>{diff ? diff.months : "—"}</dd></div>
+            <div><dt>In weeks</dt><dd className="wb-figure-text">{diff ? diff.weeks : "—"}</dd></div>
+            <div><dt>In months</dt><dd className="wb-figure-text">{diff ? diff.months : "—"}</dd></div>
           </dl>
           {diff && diff.days < 0 ? <p className="wb-note">The end date is before the start date, so the numbers are negative.</p> : null}
         </section>
 
         <section className="wb-card" aria-labelledby="shift-title">
           <h2 id="shift-title">Add or subtract</h2>
-          <div className="wb-inputs">
+          <div className="wb-inputs wb-inputs-pair">
             <label className="wb-input">Date<input type="date" value={baseValue} onChange={(event) => setBase(event.target.value)} /></label>
             <label className="wb-input">Amount<input type="number" inputMode="numeric" step={1} value={amount} onChange={(event) => setAmount(event.target.value)} aria-invalid={amountValid ? undefined : true} aria-describedby="shift-amount-hint" /></label>
             <Segmented label="Unit" options={UNITS} value={unit} onChange={setUnit} />
@@ -59,13 +61,13 @@ export default function DateCalculatorTool() {
             {shifted && baseValue ? (
               <>{displayDate(baseValue)} {amountNumber >= 0 ? "+" : "−"} {Math.abs(amountNumber)} {unit}<strong>{displayDate(shifted)}</strong></>
             ) : (
-              <>Result<strong>—</strong></>
+              <>Result<strong>{isClient ? "—" : "Loading…"}</strong></>
             )}
           </p>
         </section>
       </div>
 
-      <p className="wb-hint">Dates use the Asia/Bangkok calendar. The month figure in “Days between” is an average of 30.44 days; adding months uses the calendar.</p>
+      <p className="wb-hint">Dates use the Asia/Bangkok calendar. “In months” counts whole calendar months, then the days left over (Jan 31 to Feb 28 is one month).</p>
     </Workbench>
   );
 }

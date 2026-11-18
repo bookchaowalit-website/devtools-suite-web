@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { AlertIcon, CheckIcon, CopyIcon, Segmented, SwapIcon, ToolIntro, useCopy, Workbench } from "@/components/workbench";
+import { AlertIcon, CheckIcon, CopyBlocked, CopyIcon, Segmented, SwapIcon, ToolIntro, useCopy, Workbench } from "@/components/workbench";
 import { Base64Error, decodeBase64, encodeBase64, plural, textStats } from "@/lib/base64/base64";
 
 type Mode = "encode" | "decode";
@@ -28,7 +28,7 @@ export default function Base64Tool() {
 
   // The result follows the input as you type; there is no separate convert step.
   const { output, error } = convert(mode, input, urlSafe);
-  const { copied, copy } = useCopy(output, (ok) => setAnnouncement(ok ? "Result copied to the clipboard." : "Copy was blocked. Select the result and copy it by hand."));
+  const { copied, blocked, copy } = useCopy(output, (ok) => setAnnouncement(ok ? "Result copied to the clipboard." : "Copy was blocked. Select the result and copy it by hand."));
   const inputLabel = mode === "encode" ? "Text" : "Base64";
   const outputLabel = mode === "encode" ? "Base64" : "Text";
 
@@ -46,12 +46,11 @@ export default function Base64Tool() {
 
       <div className="wb-controls">
         <Segmented label="Direction" options={MODES} value={mode} onChange={setMode} />
-        {mode === "encode" ? (
-          <label className="wb-switch">
-            <input type="checkbox" role="switch" checked={urlSafe} onChange={(event) => setUrlSafe(event.target.checked)} />
-            <span>URL-safe<small>Uses - and _, drops = padding</small></span>
-          </label>
-        ) : null}
+        {/* Always rendered (disabled while decoding) so switching direction never moves the panes. */}
+        <label className="wb-switch">
+          <input type="checkbox" role="switch" checked={mode === "encode" && urlSafe} disabled={mode !== "encode"} onChange={(event) => setUrlSafe(event.target.checked)} />
+          <span>URL-safe<small>{mode === "encode" ? "Uses - and _, drops = padding" : "Encoding only; decoding accepts both"}</small></span>
+        </label>
       </div>
 
       <div className="wb-panes">
@@ -89,7 +88,8 @@ export default function Base64Tool() {
               </button>
             </div>
           </div>
-          <textarea id="b64-output" value={output} readOnly placeholder="The result appears here as you type" aria-describedby="b64-output-meta" spellCheck={false} />
+          <textarea id="b64-output" value={output} readOnly placeholder={error ? "Fix the input to see the result" : "The result appears here as you type"} aria-describedby="b64-output-meta" spellCheck={false} />
+          <CopyBlocked show={blocked} />
           <p id="b64-output-meta" className="wb-pane-meta">{describe(output)}</p>
         </section>
       </div>

@@ -109,7 +109,11 @@ describe("/markdown-editor on the Workbench shell", () => {
   it("renders the sample preview next to a labelled source field", () => {
     expect(html).toContain('class="wb"');
     expect(html).toContain('<label for="md-source">Markdown</label>');
-    expect(html).toMatch(/<h1[^>]*>Markdown Editor<\/h1>/);
+    // The page owns the only h1; the preview's "# Markdown Editor" is an h2 at h1 size.
+    expect(html.match(/<h1/g)?.length).toBe(1);
+    expect(html).toContain('<h2 class="md-h1">Markdown Editor</h2>');
+    expect(html).toContain('aria-label="Preview"');
+    expect(html).toContain("<ol><li>Numbered lists</li>");
     expect(html).not.toMatch(/two plates|proof/i);
   });
 });
@@ -165,16 +169,21 @@ describe("the last five tools on the Workbench shell", () => {
     const html = renderToString(<SnippetsTool />);
     expect(html).toContain('class="wb"');
     expect(html).toContain("React Hook");
-    expect(html).toContain('aria-current="true"');
+    expect(html).toContain('aria-pressed="true" aria-controls="snippet-panel"');
+    expect(html).not.toContain("<nav");
+    expect(html).toContain("React · JSX");
+    expect(html).toMatch(/>15<!-- --> snippets<\/p>|>15 snippets<\/p>/);
+    const css = readFileSync(new URL("../app/workbench.css", import.meta.url), "utf8");
+    expect(css).toContain('.wb-library-list button[aria-pressed="true"] { background: var(--wb-button);');
     expect(html).not.toMatch(/specimen/i);
   });
 });
 
 describe("/regex on phones", () => {
-  it("caps the preview shown above the editor, so a long paste cannot push the editor screens down", () => {
+  it("keeps the editor compact and caps the preview, so the results stay in the first screen", () => {
     const css = readFileSync(new URL("../app/workbench.css", import.meta.url), "utf8");
-    const phone = css.slice(css.indexOf(".wb-panes-result-first > :first-child { grid-column: auto; grid-row: auto; }"));
-    expect(phone).toMatch(/\.wb-panes-result-first \.wb-highlight \{[^}]*max-height: min\(40vh, 320px\);[^}]*overflow-y: auto;/);
+    expect(css).toMatch(/\.wb-regex-panes textarea \{[^}]*height: 96px;[^}]*max-height: 40vh;[^}]*overflow-y: auto;/);
+    expect(css).toMatch(/\.wb-regex-panes \.wb-highlight \{[^}]*max-height: min\(40vh, 320px\);[^}]*overflow-y: auto;/);
   });
 });
 
@@ -197,14 +206,23 @@ describe("/regex preview for keyboard users", () => {
   });
 });
 
-// Phones show the result above the editor; the DOM must say the same so Tab follows the screen (Codex review, 2026-11-19).
+// Tab reaches the editor before the results on every screen size (Codex review, 2026-11-19).
 describe("/regex focus order", () => {
-  it("puts the result pane before the test text in the DOM, with no CSS order swap", () => {
+  it("puts the test text before the results in the DOM, with no grid or order swap", () => {
     const html = renderToString(<RegexTool />);
-    expect(html.indexOf('aria-label="Highlighted matches"')).toBeGreaterThan(-1);
-    expect(html.indexOf('aria-label="Highlighted matches"')).toBeLessThan(html.indexOf('id="regex-text"'));
+    expect(html.indexOf('id="regex-text"')).toBeGreaterThan(-1);
+    expect(html.indexOf('id="regex-text"')).toBeLessThan(html.indexOf('aria-label="Highlighted matches"'));
     const css = readFileSync(new URL("../app/workbench.css", import.meta.url), "utf8");
-    expect(css).not.toMatch(/\.wb-panes-result-first[^{]*\{[^}]*order:/);
-    expect(css).toMatch(/\n\.wb-panes-result-first > :first-child \{ grid-column: 2; grid-row: 1; \}/);
+    expect(css).not.toMatch(/wb-panes-result-first/);
+    expect(css).not.toMatch(/\.wb-regex-panes[^{]*\{[^}]*(order|grid-column):/);
+  });
+
+  it("shows the pattern label and every flag's meaning on screen", () => {
+    const html = renderToString(<RegexTool />);
+    expect(html).toMatch(/<label id="pattern-label" for="regex-pattern" class="wb-expression-label">Pattern<\/label>/);
+    expect(html).toContain("<small>^ $ per line</small>");
+    expect(html).not.toMatch(/title="All matches"/);
+    expect(html).toContain('<span class="wb-sr">[match <!-- -->2<!-- -->: </span>');
+    expect(html).toContain('class="is-alt"');
   });
 });

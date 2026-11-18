@@ -1,4 +1,5 @@
-export type Run = { ms: number; ok: boolean; at: number; target: string };
+/** `opaque`: a cross-site no-cors request, so the browser hid the status (a 404 or 500 still counts as a reply). */
+export type Run = { ms: number; ok: boolean; at: number; target: string; opaque?: boolean };
 
 export const MAX_RUNS = 12;
 export const TIMEOUT_MS = 10_000;
@@ -46,4 +47,10 @@ export function summarize(runs: Run[]): Summary {
 
 export function addRun(runs: Run[], run: Run): Run[] {
   return [run, ...runs].slice(0, MAX_RUNS);
+}
+
+/** Short sentence for screen readers after each run, instead of re-reading all four figures. */
+export function runAnnouncement(run: Run, summary: Summary): string {
+  const first = run.ok ? `${run.ms} ms${run.opaque ? ", response not readable" : ""}.` : `Failed after ${run.ms} ms.`;
+  return summary.ok > 1 ? `${first} Average ${summary.average} ms.` : first;
 }

@@ -10,16 +10,53 @@ export const SAMPLES: Record<Mode, string> = {
   js: `// A small function\nfunction greet(name) {\n  const message = "Hello, " + name;\n  return message;\n}`,
 };
 
-/** Strip comments and collapse whitespace. JSON is parsed, so invalid JSON throws. */
+/**
+ * Splits code into string literals (kept byte for byte) and the code between them, with comments removed from the
+ * code only. JavaScript also keeps `template literals` whole. Regular-expression literals are not recognised.
+ */
+export function splitCode(input: string, { templates = false, lineComments = false }: { templates?: boolean; lineComments?: boolean } = {}): { code: boolean; text: string }[] {
+  const parts: { code: boolean; text: string }[] = [];
+  let code = "";
+  const flush = () => { if (code) { parts.push({ code: true, text: code }); code = ""; } };
+  for (let i = 0; i < input.length; i += 1) {
+    const char = input[i];
+    const quote = char === '"' || char === "'" || (templates && char === "`");
+    if (quote) {
+      let end = i + 1;
+      while (end < input.length && input[end] !== char) end += input[end] === "\\" ? 2 : 1;
+      flush();
+      parts.push({ code: false, text: input.slice(i, Math.min(end + 1, input.length)) });
+      i = end;
+    } else if (char === "/" && input[i + 1] === "*") {
+      const end = input.indexOf("*/", i + 2);
+      code += " ";
+      i = end === -1 ? input.length : end + 1;
+    } else if (lineComments && char === "/" && input[i + 1] === "/") {
+      const end = input.indexOf("\n", i + 2);
+      code += "\n";
+      i = end === -1 ? input.length : end;
+    } else {
+      code += char;
+    }
+  }
+  flush();
+  return parts;
+}
+
+/** Collapse whitespace in the code parts only, then trim spaces around punctuation; strings pass through unchanged. */
+function squeeze(parts: { code: boolean; text: string }[], punctuation: RegExp): string {
+  return parts.map((part) => (part.code ? part.text.replace(/\s+/g, " ").replace(punctuation, "$1") : part.text)).join("").trim();
+}
+
+/** True when JavaScript input has a "/" that may start a regular expression literal, which this minifier does not parse. */
+export function mayHaveRegexLiteral(input: string): boolean {
+  return splitCode(input, { templates: true, lineComments: true }).some((part) => part.code && /(^|[=(,:!&|?{};\[]\s*)\/(?![/*])/.test(part.text));
+}
+
+/** Strip comments and collapse whitespace. JSON is parsed, so invalid JSON throws. Strings are never changed. */
 export function minify(mode: Mode, input: string): string {
   if (mode === "json") return JSON.stringify(JSON.parse(input));
-  if (mode === "css") {
-    return input
-      .replace(/\/\*[\s\S]*?\*\//g, "")
-      .replace(/\s+/g, " ")
-      .replace(/\s*([{}:;,])\s*/g, "$1")
-      .trim();
-  }
+  if (mode === "css") return squeeze(splitCode(input), /\s*([{}:;,>])\s*/g);
   if (mode === "html") {
     return input
       .replace(/<!--[\s\S]*?-->/g, "")
@@ -27,9 +64,5 @@ export function minify(mode: Mode, input: string): string {
       .replace(/\s{2,}/g, " ")
       .trim();
   }
-  const withoutComments = input.replace(/\/\*[\s\S]*?\*\//g, "").replace(/(^|[^:])\/\/.*$/gm, "$1");
-  return withoutComments
-    .replace(/\s+/g, " ")
-    .replace(/\s*([{};,=+\-*/%<>!&|?:])\s*/g, "$1")
-    .trim();
+  return squeeze(splitCode(input, { templates: true, lineComments: true }), /\s*([{};,=+\-*/%<>!&|?:()[\]])\s*/g);
 }

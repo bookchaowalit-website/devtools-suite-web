@@ -34,3 +34,11 @@ export function hslToHex(h: number, s: number, l: number) {
   const { r, g, b } = hslToRgb(h, s, l);
   return rgbToHex(r, g, b);
 }
+
+/** An RGB channel typed by hand: a whole number 0–255, or null for empty, decimal or out-of-range text (never silently 0). */
+export function parseChannel(raw: string): number | null {
+  const text = raw.trim();
+  if (!/^\d{1,3}$/.test(text)) return null;
+  const value = Number(text);
+  return value <= 255 ? value : null;
+}

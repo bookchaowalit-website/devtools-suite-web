@@ -1,6 +1,6 @@
 import { describe, it } from "vitest";
 import { expect } from "./support/expect.ts";
-import { addRun, MAX_RUNS, normalizeTarget, summarize, type Run } from "@/lib/latency-test/latency";
+import { addRun, MAX_RUNS, normalizeTarget, runAnnouncement, summarize, type Run } from "@/lib/latency-test/latency";
 
 const origin = "https://latency.test";
 
@@ -53,4 +53,12 @@ describe("normalizeTarget edge cases", () => {
   it("treats zero-width-only input as empty", () => {
     expect(normalizeTarget("​﻿ ", "http://x")).toEqual({ error: "Enter a URL or a path such as /." });
   });
+});
+
+it("one short announcement per run instead of all four figures", () => {
+  const one = summarize([{ ms: 182, ok: true, at: 1, target: "a" }]);
+  expect(runAnnouncement({ ms: 182, ok: true, at: 1, target: "a" }, one)).toBe("182 ms.");
+  const two = summarize([{ ms: 182, ok: true, at: 2, target: "a" }, { ms: 226, ok: true, at: 1, target: "a" }]);
+  expect(runAnnouncement({ ms: 182, ok: true, at: 2, target: "a", opaque: true }, two)).toBe("182 ms, response not readable. Average 204 ms.");
+  expect(runAnnouncement({ ms: 10_000, ok: false, at: 3, target: "a" }, two)).toBe("Failed after 10000 ms. Average 204 ms.");
 });

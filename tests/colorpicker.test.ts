@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import { test } from "vitest";
-import { clamp, hexToRgb, rgbToHex, rgbToHsl, hslToRgb, hslToHex } from "@/lib/colorpicker/conversion";
+import { clamp, hexToRgb, parseChannel, rgbToHex, rgbToHsl, hslToRgb, hslToHex } from "@/lib/colorpicker/conversion";
 test("HEX to RGB round trips normalize shorthand and case", () => {
   for (const [hex, expected] of [["#F00", "#ff0000"], ["0aB", "#00aabb"], ["#123456", "#123456"], ["000000", "#000000"], ["#FFFFFF", "#ffffff"]]) {
     const rgb = hexToRgb(hex)!;
@@ -82,4 +82,10 @@ test("a representative RGB cube stays within rounded-HSL quantization tolerance"
     const result = hslToRgb(hsl.h, hsl.s, hsl.l);
     assert.ok(Math.abs(result.r - r) <= 4 && Math.abs(result.g - g) <= 4 && Math.abs(result.b - b) <= 4);
   }
+});
+
+test("typed RGB channels are 0–255 whole numbers; anything else is refused, never silently 0", () => {
+  assert.equal(parseChannel("0"), 0);
+  assert.equal(parseChannel(" 255 "), 255);
+  for (const raw of ["", "256", "-1", "1.5", "abc", "1e2"]) assert.equal(parseChannel(raw), null, raw);
 });

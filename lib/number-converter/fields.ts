@@ -33,3 +33,21 @@ export function editField(state: FieldsState, base: Base, raw: string): FieldsSt
 export function shownValue(state: FieldsState, base: Base): string {
   return state.draft?.base === base ? state.draft.raw : state.valid[base];
 }
+
+export const PREFIX: Record<Base, string> = { bin: "0b", oct: "0o", dec: "", hex: "0x" };
+
+/** Binary and hexadecimal split into groups of four from the right (nibbles) for reading; the sign stays in front. */
+export function groupDigits(value: string, base: Base): string {
+  if ((base !== "bin" && base !== "hex") || value.length <= 4) return value;
+  const negative = value.startsWith("-");
+  const digits = negative ? value.slice(1) : value;
+  const groups: string[] = [];
+  for (let end = digits.length; end > 0; end -= 4) groups.unshift(digits.slice(Math.max(0, end - 4), end));
+  return `${negative ? "-" : ""}${groups.join(" ")}`;
+}
+
+/** The value to copy: plain digits, optionally with its 0b / 0o / 0x prefix after any minus sign. */
+export function copyValue(value: string, base: Base, withPrefix: boolean): string {
+  if (!withPrefix || !PREFIX[base] || !value) return value;
+  return value.startsWith("-") ? `-${PREFIX[base]}${value.slice(1)}` : `${PREFIX[base]}${value}`;
+}

@@ -22,26 +22,62 @@ export function escapeHtml(value: string) {
   return value.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
 }
 
-export function renderMarkdown(source: string) {
+const TABLE_RULE = /^\|?\s*:?-+:?\s*(\|\s*:?-+:?\s*)*\|?\s*$/;
+const cells = (row: string) => row.trim().replace(/^\|/, "").replace(/\|$/, "").split("|").map((cell) => cell.trim());
+
+/**
+ * Small Markdown renderer: headings 1–6, bold, italic, code, links, quotes, fenced code, bullet and numbered lists
+ * (nested by two-space indents) and pipe tables. HTML in the source is escaped first.
+ * `headingOffset` moves every heading down (1 turns "#" into <h2>), for a preview inside a page that owns the h1;
+ * such headings carry class="md-hN" so they keep the size of the level that was written.
+ */
+export function renderMarkdown(source: string, { headingOffset = 0 }: { headingOffset?: number } = {}) {
   const escaped = escapeHtml(source);
   let inCode = false;
-  let listOpen = false;
+  const lists: { type: "ul" | "ol"; indent: number }[] = [];
   const output: string[] = [];
-  const closeList = () => { if (listOpen) { output.push("</ul>"); listOpen = false; } };
+  const closeList = () => { while (lists.length) output.push(`</li></${lists.pop()?.type}>`); };
   const inline = (line: string) => line
     .replace(/`([^`]+)`/g, "<code>$1</code>")
     .replace(/\*\*([^*]+)\*\*/g, "<strong>$1</strong>")
     .replace(/\*([^*]+)\*/g, "<em>$1</em>")
     .replace(/\[([^\]]+)\]\(([^)]+)\)/g, (_, label: string, url: string) =>
       isSafeLink(url) ? `<a href="${url}" rel="noreferrer">${label}</a>` : label);
-  for (const line of escaped.split("\n")) {
+  const listItem = (indent: number, type: "ul" | "ol", start: number, text: string) => {
+    while (lists.length && lists[lists.length - 1].indent > indent) output.push(`</li></${lists.pop()?.type}>`);
+    const top = lists[lists.length - 1];
+    if (top && top.indent === indent && top.type !== type) { output.push(`</li></${lists.pop()?.type}>`); }
+    const current = lists[lists.length - 1];
+    if (current && current.indent === indent) output.push("</li>");
+    else { output.push(type === "ol" && start !== 1 ? `<ol start="${start}">` : `<${type}>`); lists.push({ type, indent }); }
+    output.push(`<li>${inline(text)}`);
+  };
+  const lines = escaped.split("\n");
+  for (let index = 0; index < lines.length; index += 1) {
+    const line = lines[index];
     if (line.startsWith("```")) { if (inCode) { output.push("</code></pre>"); inCode = false; } else { closeList(); output.push("<pre><code>"); inCode = true; } continue; }
     if (inCode) { output.push(line + "\n"); continue; }
-    if (/^### /.test(line)) { closeList(); output.push(`<h3>${inline(line.slice(4))}</h3>`); }
-    else if (/^## /.test(line)) { closeList(); output.push(`<h2>${inline(line.slice(3))}</h2>`); }
-    else if (/^# /.test(line)) { closeList(); output.push(`<h1>${inline(line.slice(2))}</h1>`); }
-    else if (/^&gt; /.test(line)) { closeList(); output.push(`<blockquote>${inline(line.replace(/^&gt; /, ""))}</blockquote>`); }
-    else if (/^- /.test(line)) { if (!listOpen) { output.push("<ul>"); listOpen = true; } output.push(`<li>${inline(line.slice(2))}</li>`); }
+    const heading = /^(#{1,6}) (.*)$/.exec(line);
+    const bullet = /^( *)[-*+] (.*)$/.exec(line);
+    const numbered = /^( *)(\d{1,9})[.)] (.*)$/.exec(line);
+    if (heading) {
+      closeList();
+      const written = heading[1].length;
+      const level = Math.min(6, written + headingOffset);
+      output.push(headingOffset ? `<h${level} class="md-h${written}">${inline(heading[2])}</h${level}>` : `<h${level}>${inline(heading[2])}</h${level}>`);
+    } else if (/^&gt; /.test(line)) { closeList(); output.push(`<blockquote>${inline(line.replace(/^&gt; /, ""))}</blockquote>`); }
+    else if (bullet) listItem(Math.floor(bullet[1].length / 2), "ul", 1, bullet[2]);
+    else if (numbered) listItem(Math.floor(numbered[1].length / 2), "ol", Number(numbered[2]), numbered[3]);
+    else if (line.includes("|") && TABLE_RULE.test(lines[index + 1] ?? "")) {
+      closeList();
+      const head = cells(line);
+      const rows: string[][] = [];
+      index += 2;
+      while (index < lines.length && lines[index].includes("|") && lines[index].trim()) rows.push(cells(lines[index++]));
+      index -= 1;
+      const row = (values: string[], tag: "th" | "td") => `<tr>${head.map((_, column) => `<${tag}${tag === "th" ? ' scope="col"' : ""}>${inline(values[column] ?? "")}</${tag}>`).join("")}</tr>`;
+      output.push(`<table><thead>${row(head, "th")}</thead><tbody>${rows.map((values) => row(values, "td")).join("")}</tbody></table>`);
+    }
     else if (!line.trim()) { closeList(); output.push("<br />"); }
     else { closeList(); output.push(`<p>${inline(line)}</p>`); }
   }

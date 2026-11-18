@@ -1,13 +1,13 @@
 import { describe, it } from "vitest";
 import { expect } from "./support/expect.ts";
-import { convertLoad, formulaFor, fromKn, KGF_PER_KN, loadBounds, loadUnit, momentUnit, roundForUnit, solve, toKn, validate } from "@/lib/engineering-calc/beam";
+import { convertLoad, formulaFor, fromKn, KGF_PER_KN, LOAD_CASES, LOAD_PRESETS, loadBounds, maxLocations, loadUnit, momentUnit, roundForUnit, solve, toKn, validate } from "@/lib/engineering-calc/beam";
 
 describe("solve", () => {
   it("uses wL²/8 and wL/2 for distributed loads", () => {
     const result = solve("uniform", 4, 10);
     expect(result.moment).toBeCloseTo(20);
     expect(result.shear).toBeCloseTo(20);
-    expect(solve("service", 6, 2).moment).toBeCloseTo(9);
+    expect(solve("uniform", 6, 2).moment).toBeCloseTo(9);
   });
 
   it("uses PL/4 and P/2 for a mid-span point load", () => {
@@ -35,7 +35,7 @@ describe("labels", () => {
     expect(formulaFor("point").moment).toBe("M = P · L / 4");
     expect(formulaFor("uniform").moment).toBe("M = w · L² / 8");
     expect(loadUnit("point")).toBe("kN");
-    expect(loadUnit("service")).toBe("kN/m");
+    expect(loadUnit("uniform")).toBe("kN/m");
   });
 });
 
@@ -92,5 +92,13 @@ describe("unit rounding at the pass/fail threshold", () => {
     expect(convertLoad(4, "kN", "kgf")).toBe(408);
     expect(convertLoad(11, "kgf", "kN")).toBe(0.11);
     expect(convertLoad(Number.NaN, "kN", "kgf")).toBeNaN();
+  });
+});
+
+describe("load cases and presets", () => {
+  it("has two distinct analyses, the lower service load is a preset, and says where the maxima are", () => {
+    expect(LOAD_CASES.map((item) => item.id)).toEqual(["uniform", "point"]);
+    expect(LOAD_PRESETS.uniform.map((preset) => preset.load)).toEqual([4, 2.5]);
+    expect(maxLocations(4.2)).toEqual({ moment: "at mid-span, x = L/2 = 2.1 m", shear: "at each support, x = 0 and x = L" });
   });
 });

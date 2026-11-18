@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { CheckIcon, CopyIcon, Segmented, ToolIntro, useCopy, Workbench } from "@/components/workbench";
+import { CheckIcon, CopyBlocked, CopyIcon, Segmented, ToolIntro, useCopy, Workbench } from "@/components/workbench";
 import { cssTokens, jsonTokens, tailwindTokens, type Palette } from "@/lib/color-palettes/export";
 
 const PRESETS: Palette[] = [
@@ -23,7 +23,7 @@ export default function ColorPalettesTool() {
   const [announcement, setAnnouncement] = useState("");
   const code = EXPORT[format](selected);
   const copiedValue = copiedKey === "code" ? code : copiedKey === "all" ? selected.colors.join("\n") : copiedKey ?? "";
-  const { copied, copy } = useCopy(copiedValue, (ok) => setAnnouncement(ok ? "Copied to the clipboard." : "Copy was blocked. Select the text and copy it by hand."));
+  const { copied, blocked, copy } = useCopy(copiedValue, (ok) => setAnnouncement(ok ? "Copied to the clipboard." : "Copy was blocked. Select the text and copy it by hand."));
   const copyKey = (key: string, value: string) => { setCopiedKey(key); void copy(value); };
   const isCopied = (key: string) => copied && copiedKey === key;
 
@@ -50,13 +50,15 @@ export default function ColorPalettesTool() {
             {isCopied("all") ? <><CheckIcon />Copied</> : <><CopyIcon />Copy all HEX</>}
           </button>
         </div>
+        <p className="wb-note wb-note-top">Tap a color to copy its HEX value.</p>
         <div className="wb-swatches">
           {selected.colors.map((color) => (
             <button key={color} type="button" style={{ backgroundColor: color }} onClick={() => copyKey(color, color)} aria-label={`Copy ${color}`}>
-              <span>{isCopied(color) ? "Copied" : color}</span>
+              <span>{isCopied(color) ? <><CheckIcon />Copied</> : <><CopyIcon />{color}</>}</span>
             </button>
           ))}
         </div>
+        <CopyBlocked show={blocked && copiedKey !== "code"} what="the color value" />
       </section>
 
       <section className="wb-pane wb-export" aria-labelledby="export-title">
@@ -69,6 +71,7 @@ export default function ColorPalettesTool() {
             </button>
           </div>
         </div>
+        <CopyBlocked show={blocked && copiedKey === "code"} what="the code below" />
         <pre className="wb-code"><code>{code}</code></pre>
       </section>
       <p className="wb-sr" role="status" aria-live="polite">{announcement}</p>

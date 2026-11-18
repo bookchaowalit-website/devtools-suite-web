@@ -1,11 +1,23 @@
-export type LoadCaseId = "uniform" | "point" | "service";
+export type LoadCaseId = "uniform" | "point";
 export type LoadCase = { id: LoadCaseId; label: string; note: string; symbol: string; baseLoad: number };
 
+/** Two real load cases. The old "Service check" used the uniform formula with a lower load, so it is a preset now. */
 export const LOAD_CASES: LoadCase[] = [
-  { id: "uniform", label: "Uniform load", note: "Load distributed across the span", symbol: "w", baseLoad: 4 },
-  { id: "point", label: "Mid-span point", note: "Single illustrative load at centre", symbol: "P", baseLoad: 7 },
-  { id: "service", label: "Service check", note: "Lower illustrative working load", symbol: "q", baseLoad: 2.5 },
+  { id: "uniform", label: "Uniform load", note: "Spread evenly along the whole span", symbol: "w", baseLoad: 4 },
+  { id: "point", label: "Mid-span point", note: "One load at the centre", symbol: "P", baseLoad: 7 },
 ];
+
+/** Example load values (kN or kN/m) offered as one-tap presets for each case. */
+export const LOAD_PRESETS: Record<LoadCaseId, { label: string; load: number }[]> = {
+  uniform: [{ label: "Example", load: 4 }, { label: "Service (lower)", load: 2.5 }],
+  point: [{ label: "Example", load: 7 }, { label: "Service (lower)", load: 4.5 }],
+};
+
+/** Where the maxima occur on a simply supported beam, for the Result card. */
+export function maxLocations(span: number): { moment: string; shear: string } {
+  const half = Math.round((span / 2) * 100) / 100;
+  return { moment: `at mid-span, x = L/2 = ${half} m`, shear: "at each support, x = 0 and x = L" };
+}
 
 export const SPAN_RANGE = { min: 1, max: 12 } as const;
 export const LOAD_RANGE = { min: 0.1, max: 50 } as const;
@@ -93,7 +105,7 @@ export function convertLoad(load: number, from: ForceUnit, to: ForceUnit): numbe
 
 /**
  * Simply supported beam: maximum bending moment (kN·m) and maximum end shear (kN).
- * Uniform/service: M = wL²/8, V = wL/2. Mid-span point: M = PL/4, V = P/2.
+ * Uniform: M = wL²/8, V = wL/2. Mid-span point: M = PL/4, V = P/2.
  */
 export function solve(caseId: LoadCaseId, span: number, load: number): { moment: number; shear: number } {
   if (isPointLoad(caseId)) return { moment: (load * span) / 4, shear: load / 2 };
