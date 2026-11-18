@@ -63,7 +63,8 @@ test("unified diff has headers, one hunk, +/- / space prefixes and a newline aft
 // Codex review, 2026-11-19 (post-push round): the copied patch must apply.
 test("git apply accepts the copied diff and it reproduces the changed text", () => {
   const dir = mkdtempSync(join(tmpdir(), "diffcheck-"));
-  const cases: [string, string][] = [["a\n", "b\n"], ["a\nb\nc\n", "a\nB\nc\nd\n"], ["x\ny", "x\nz"], ["same\n", "same"], ["one", "one\n"], ["", "new\n"]];
+  const cases: [string, string][] = [["a\n", "b\n"], ["a\nb\nc\n", "a\nB\nc\nd\n"], ["x\ny", "x\nz"], ["same\n", "same"], ["one", "one\n"], ["", "new\n"],
+    ["\n", "x\n"], ["same", "same\nextra\n"], ["a\n\nb\n", "a\nb\n"], ["x\n", ""], ["\n\n", "\n"], ["a\nb", "a\nb\nc"]];
   try {
     execFileSync("git", ["init", "-q"], { cwd: dir });
     for (const [left, right] of cases) {

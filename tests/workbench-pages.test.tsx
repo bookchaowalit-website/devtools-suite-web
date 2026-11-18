@@ -243,3 +243,21 @@ describe("focus order and storage scope", () => {
     expect(html).toContain("Off: the text is gone when you close the tab.");
   });
 });
+
+// Codex review, 2026-11-19 (third round).
+describe("third-round page checks", () => {
+  it("/hashgen still hashes empty text and labels it", async () => {
+    const page = readFileSync(new URL("../app/(tools)/hashgen/page.tsx", import.meta.url), "utf8");
+    expect(page).toContain('const subject = source === "text" ? `text\\u0000${input}`');
+    expect(page).toContain("hash of empty text (0 bytes)");
+  });
+
+  it("/jsonconverter keeps Tab visible but disabled for YAML, and Go to line has a 44px target", () => {
+    const html = renderToString(<JsonConverterTool />);
+    expect(html).toContain(">Tab</button>");
+    const css = readFileSync(new URL("../app/workbench.css", import.meta.url), "utf8");
+    expect(css).toMatch(/\.wb-error \.wb-link \{[^}]*min-height: 44px/);
+    const page = readFileSync(new URL("../app/(tools)/jsonconverter/page.tsx", import.meta.url), "utf8");
+    expect(page).not.toContain("scrollTop");
+  });
+});

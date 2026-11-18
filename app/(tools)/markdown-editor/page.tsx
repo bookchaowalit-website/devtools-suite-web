@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { CheckIcon, CopyBlocked, CopyIcon, ToolIntro, UndoToast, useCopy, useUndo, Workbench } from "@/components/workbench";
 import { renderMarkdown } from "@/lib/markdown-editor/render";
 
@@ -34,21 +34,24 @@ export default function MarkdownEditorTool() {
   const [announcement, setAnnouncement] = useState("");
   // Saving is opt-in (PRODUCT.md: nothing is stored unless you ask). A saved draft from an earlier visit turns it on.
   const [keep, setKeep] = useState(false);
+  // The switch as it is now, read by Undo when it runs (not as it was when Reset was pressed).
+  const keepNow = useRef(false);
   const [storageBlocked, setStorageBlocked] = useState(false);
   const undo = useUndo();
   const { copied, blocked, copy } = useCopy(source, (ok) => setAnnouncement(ok ? "Markdown copied to the clipboard." : "Copy was blocked. Select the text and copy it by hand."));
   useEffect(() => {
     const timer = window.setTimeout(() => {
-      try { const saved = localStorage.getItem(DRAFT_KEY); if (saved !== null) { setSource(saved); setKeep(true); } } catch { setStorageBlocked(true); }
+      try { const saved = localStorage.getItem(DRAFT_KEY); if (saved !== null) { setSource(saved); setKeep(true); keepNow.current = true; } } catch { setStorageBlocked(true); }
     }, 0);
     return () => window.clearTimeout(timer);
   }, []);
-  const write = (text: string, on = keep) => {
+  const write = (text: string, on = keepNow.current) => {
     try { if (on) localStorage.setItem(DRAFT_KEY, text); else localStorage.removeItem(DRAFT_KEY); } catch { setStorageBlocked(true); }
   };
   /** Typing goes through here: it saves when keeping is on, and ends any Undo offer so Undo never overwrites new text. */
   const edit = (next: string) => { setSource(next); undo.dismiss(); write(next); };
-  const toggleKeep = (on: boolean) => { setKeep(on); write(source, on); setAnnouncement(on ? "Draft is kept in this browser." : "Draft removed from this browser."); };
+  // Changing the setting also ends any Undo offer, so an Undo can never save what you just asked to remove.
+  const toggleKeep = (on: boolean) => { setKeep(on); keepNow.current = on; undo.dismiss(); write(source, on); setAnnouncement(on ? "Draft is kept in this browser." : "Draft removed from this browser."); };
   const reset = () => {
     const before = source;
     setSource(SAMPLE); write(SAMPLE);

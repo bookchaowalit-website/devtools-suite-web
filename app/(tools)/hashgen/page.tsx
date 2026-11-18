@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState, type DragEvent } from "react";
-import { AlertIcon, CheckIcon, CopyBlocked, CopyIcon, Segmented, ToolIntro, useCopy, Workbench } from "@/components/workbench";
+import { AlertIcon, CheckIcon, CopyBlocked, CopyIcon, Segmented, ToolIntro, UndoToast, useCopy, useUndo, Workbench } from "@/components/workbench";
 import { algorithms, compareDigest, digestBytes, formatDigest, type Algorithm, type DigestFormat } from "@/lib/hashgen/digest";
 
 const BITS: Record<Algorithm, number> = { "SHA-1": 160, "SHA-256": 256, "SHA-384": 384, "SHA-512": 512 };
@@ -33,9 +33,11 @@ export default function HashTool() {
   const [result, setResult] = useState<{ key: string; bytes: Uint8Array | null; error?: string } | null>(null);
   const selection = useRef(0);
   const fileInput = useRef<HTMLInputElement>(null);
+  const undo = useUndo();
   const [announcement, setAnnouncement] = useState("");
 
-  const subject = source === "text" ? (input === "" ? null : `text\u0000${input}`) : file?.data ? `file\u0000${file.id}` : null;
+  // Empty text is a valid input (zero bytes has a hash); only "no file chosen yet" has nothing to hash.
+  const subject = source === "text" ? `text\u0000${input}` : file?.data ? `file\u0000${file.id}` : null;
   const key = subject ? `${algorithm}\u0000${subject}` : "";
   useEffect(() => {
     if (!subject) return;
@@ -60,6 +62,7 @@ export default function HashTool() {
     // Reset the input so choosing the same file again (after Clear, say) still fires a change.
     if (fileInput.current) fileInput.current.value = "";
     if (!picked) return;
+    undo.dismiss();
     const id = ++selection.current;
     if (picked.size > MAX_FILE_BYTES) { setFile(null); setFileError(`${picked.name} is ${formatSize(picked.size)}; files up to 512 MB can be hashed in the browser.`); return; }
     setFileError("");
@@ -73,7 +76,13 @@ export default function HashTool() {
       if (selection.current === id) { setFile(null); setFileError(`${picked.name} could not be read. It may have been moved or changed; choose it again.`); }
     }
   };
-  const clearFile = () => { selection.current += 1; setFile(null); setFileError(""); if (fileInput.current) fileInput.current.value = ""; };
+  // Clear offers Undo, which brings the file back only if no other file was chosen since.
+  const clearFile = () => {
+    const cleared = file;
+    const id = ++selection.current;
+    setFile(null); setFileError(""); if (fileInput.current) fileInput.current.value = "";
+    if (cleared?.data) undo.offer("File cleared.", () => { if (selection.current === id) { selection.current += 1; setFile({ ...cleared, id: selection.current }); } });
+  };
   const drop = (event: DragEvent<HTMLElement>) => { event.preventDefault(); setOver(false); void pick(event.dataTransfer.files[0]); };
   const emptyText = source === "text" ? "Type or paste text to get its hash." : "Choose or drop a file to get its hash.";
 
@@ -133,10 +142,11 @@ export default function HashTool() {
           </div>
           <output className="wb-digest" htmlFor={source === "text" ? "hash-input" : undefined} data-empty={digest ? undefined : "true"}>{digest || hashError || (subject || file ? "Calculating…" : emptyText)}</output>
           <CopyBlocked show={blocked} what="the hash" />
-          <p className="wb-pane-meta">{FORMAT_NOTE[format](BITS[algorithm])}</p>
+          <p className="wb-pane-meta">{FORMAT_NOTE[format](BITS[algorithm])}{source === "text" && input === "" && digest ? " · hash of empty text (0 bytes)" : ""}</p>
         </section>
       </div>
       <p className="wb-sr" role="status" aria-live="polite">{announcement}</p>
+      <UndoToast state={undo} />
 
       <section className="wb-card wb-panes-gap" aria-labelledby="hash-check-title">
         <h2 id="hash-check-title">Check against an expected hash</h2>

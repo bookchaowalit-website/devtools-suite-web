@@ -55,7 +55,7 @@ export function ToolIntro({ title, summary, privacy = "Runs in your browser. Not
   );
 }
 
-export type SegmentOption<T extends string> = { value: T; label: string };
+export type SegmentOption<T extends string> = { value: T; label: string; disabled?: boolean };
 
 /** Apple-style segmented control for a small set of exclusive modes. */
 export function Segmented<T extends string>({ label, options, value, onChange, disabled = false }: { label: string; options: readonly SegmentOption<T>[]; value: T; onChange: (next: T) => void; disabled?: boolean }) {
@@ -63,7 +63,7 @@ export function Segmented<T extends string>({ label, options, value, onChange, d
   return (
     <div className={options.length >= 4 ? "wb-segmented wb-segmented-4" : "wb-segmented"} role="group" aria-label={label}>
       {options.map((option) => (
-        <button key={option.value} type="button" aria-pressed={value === option.value} disabled={disabled} onClick={() => onChange(option.value)}>
+        <button key={option.value} type="button" aria-pressed={value === option.value} disabled={disabled || option.disabled} onClick={() => onChange(option.value)}>
           {option.label}
         </button>
       ))}

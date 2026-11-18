@@ -48,3 +48,18 @@ test("text inside nested template literals is kept", () => {
   const source = "const s = `outer ${ list.map((y) => `x ( ${ y } ) z`).join(\", \") } end`;";
   assert.equal(minify("js", source), source.replace("const s = ", "const s=").replace(/;$/, ";"));
 });
+
+// Codex review, 2026-11-19 (third round): division vs regex from the previous token, in linear time.
+test("a division after a string, name or ) is never read as a regex", () => {
+  assert.equal(minify("js", 'const q = "8" / 2; // note\nconst r = 1;'), 'const q="8"/2;const r=1;');
+  assert.equal(minify("js", "const a = (b) / 2 / c; x = y[0] / 3;"), "const a=(b)/2/c;x=y[0]/3;");
+  assert.equal(minify("js", "if (ok) /a (b)/.test(s);"), "if(ok)/a (b)/.test(s);");
+  assert.equal(minify("js", "const n = 1.5 / x; return /x y/;"), "const n=1.5/x;return /x y/;");
+});
+
+test("many divisions minify in linear time", () => {
+  const code = "x = x / 2;\n".repeat(20_000);
+  const started = performance.now();
+  assert.equal(minify("js", code), "x=x/2;".repeat(20_000));
+  assert.ok(performance.now() - started < 1000, `${performance.now() - started} ms`);
+});

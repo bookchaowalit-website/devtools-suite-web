@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { AlertIcon, ToolIntro, UndoToast, useUndo, Workbench } from "@/components/workbench";
 import { addRun, MAX_RUNS, normalizeTarget, runAnnouncement, summarize, TIMEOUT_MS, type Run } from "@/lib/latency-test/latency";
 
@@ -16,6 +16,13 @@ export default function LatencyTool() {
   const [progress, setProgress] = useState("");
   const [announcement, setAnnouncement] = useState("");
   const runsRef = useRef<Run[]>([]);
+  // Leaving the page stops a batch: the request in flight is aborted and no new round starts.
+  const live = useRef({ mounted: true, controller: null as AbortController | null });
+  useEffect(() => {
+    const state = live.current;
+    state.mounted = true;
+    return () => { state.mounted = false; state.controller?.abort(); };
+  }, []);
   const undo = useUndo();
   const summary = useMemo(() => summarize(runs), [runs]);
   const latest = runs[0];
@@ -27,8 +34,10 @@ export default function LatencyTool() {
     setError("");
     setBusy(true);
     for (let round = 1; round <= times; round += 1) {
+      if (!live.current.mounted) return;
       if (times > 1) setProgress(`Run ${round} of ${times}…`);
       const run = await ping(target);
+      if (!live.current.mounted) return;
       runsRef.current = addRun(runsRef.current, run);
       setRuns(runsRef.current);
       if (round === times) setAnnouncement(times > 1 ? `${times} runs done. ${runAnnouncement(run, summarize(runsRef.current))}` : runAnnouncement(run, summarize(runsRef.current)));
@@ -40,9 +49,11 @@ export default function LatencyTool() {
   async function ping(target: { url: string; host: string }): Promise<Run> {
     const sameOrigin = new URL(target.url).origin === window.location.origin;
     const controller = new AbortController();
+    live.current.controller = controller;
     const timer = window.setTimeout(() => controller.abort(), TIMEOUT_MS);
     const started = performance.now();
     let ok = false;
+    let ms = 0;
     try {
       // Same-origin targets get a normal request; cross-origin targets use no-cors so an
       // opaque response still counts as a completed round trip without reading its body.
@@ -51,9 +62,14 @@ export default function LatencyTool() {
     } catch {
       ok = false;
     } finally {
+      // The time is taken when the response headers arrive; the body is then dropped (abort), so a large or
+      // streaming body never overlaps the next round of a batch.
+      ms = Math.round(performance.now() - started);
       window.clearTimeout(timer);
+      controller.abort();
+      if (live.current.controller === controller) live.current.controller = null;
     }
-    return { ms: Math.round(performance.now() - started), ok, at: Date.now(), target: target.host, opaque: !sameOrigin };
+    return { ms, ok, at: Date.now(), target: target.host, opaque: !sameOrigin };
   }
   // Undo puts the cleared runs back after any run made since (newest first, still capped at MAX_RUNS).
   const clearHistory = () => {
@@ -114,7 +130,7 @@ export default function LatencyTool() {
 
       <UndoToast state={undo} />
 
-      <p className="wb-hint">Timing includes DNS, connection and server time as seen by this browser. Cross-site requests can only report that a response arrived, not its status, so they are marked “response not readable”. History is kept only until you reload. Failed requests are left out of the average. Times out after {TIMEOUT_MS / 1000} s.</p>
+      <p className="wb-hint">Timing runs from the request to the response headers (DNS, connection and server time as seen by this browser); the body is not downloaded. Cross-site requests can only report that a response arrived, not its status, so they are marked “response not readable”. History is kept only until you reload. Failed requests are left out of the average. Times out after {TIMEOUT_MS / 1000} s.</p>
     </Workbench>
   );
 }

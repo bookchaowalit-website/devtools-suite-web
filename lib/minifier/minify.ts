@@ -60,26 +60,28 @@ function skipRegex(input: string, i: number): number {
   return -1;
 }
 
-/** True when a "/" at this point of the code starts a regular expression: after an operator, a bracket, or a keyword. */
-function regexCanStart(code: string): boolean {
-  const before = code.replace(/\s+$/, "");
-  if (!before) return true;
-  if (/[(,=:[!&|?{};+\-*%<>~^]$/.test(before)) return true;
-  const word = /([A-Za-z_$][\w$]*)$/.exec(before);
-  return Boolean(word && REGEX_AFTER_WORD.has(word[1]));
-}
+/** Words after which "(…)" is a condition, so a "/" right after its ")" starts a regular expression. */
+const CONDITION_WORDS = new Set(["if", "while", "for", "with"]);
 
 /**
  * Splits code into literals (kept byte for byte) and the code between them, with comments removed from the code.
  * Strings are literals in both languages; JavaScript also keeps template literals (nested ones included) and regular
  * expression literals. A block comment becomes a space in JavaScript but nothing in CSS, where ".a", a comment, ".b"
  * is the compound selector .a.b (a space would make it a descendant selector).
+ *
+ * One pass, linear in the input. Whether a "/" starts a regular expression or is a division is decided from the
+ * previous significant token, as JavaScript parsers do: after a value (a name, number, string, regex, template, ")"
+ * or "]") it divides; after an operator, "(", "," or a keyword such as return it starts a regex; after the ")" of
+ * if / while / for / with it starts a regex too.
  */
 export function splitCode(input: string, { js = false }: { js?: boolean } = {}): { code: boolean; text: string }[] {
   const parts: { code: boolean; text: string }[] = [];
   let code = "";
+  let regexAllowed = true;
+  let lastWord = "";
+  const parens: boolean[] = [];
   const flush = () => { if (code) { parts.push({ code: true, text: code }); code = ""; } };
-  const literal = (from: number, to: number) => { flush(); parts.push({ code: false, text: input.slice(from, to) }); };
+  const literal = (from: number, to: number) => { flush(); parts.push({ code: false, text: input.slice(from, to) }); regexAllowed = false; lastWord = ""; };
   for (let i = 0; i < input.length; i += 1) {
     const char = input[i];
     if (char === '"' || char === "'") { const end = skipString(input, i); literal(i, end); i = end - 1; }
@@ -93,11 +95,27 @@ export function splitCode(input: string, { js = false }: { js?: boolean } = {}):
       while (end < input.length && !LINE_END.test(input[end])) end += 1;
       code += "\n";
       i = end;
-    } else if (js && char === "/" && regexCanStart((parts.length && !code ? parts[parts.length - 1].text : "") + code)) {
+    } else if (js && char === "/" && regexAllowed) {
       const end = skipRegex(input, i);
-      if (end === -1) code += char; else { literal(i, end); i = end - 1; }
+      if (end === -1) { code += char; regexAllowed = true; lastWord = ""; } else { literal(i, end); i = end - 1; }
+    } else if (js && /[A-Za-z0-9_$\u0080-\uffff]/.test(char)) {
+      let end = i + 1;
+      while (end < input.length && /[A-Za-z0-9_$.\u0080-\uffff]/.test(input[end]) && !(input[end] === "." && !/\d/.test(char))) end += 1;
+      const word = input.slice(i, end);
+      code += word;
+      lastWord = word;
+      regexAllowed = REGEX_AFTER_WORD.has(word);
+      i = end - 1;
     } else {
       code += char;
+      if (js && !/\s/.test(char)) {
+        if (char === "(") { parens.push(CONDITION_WORDS.has(lastWord)); regexAllowed = true; }
+        else if (char === ")") regexAllowed = parens.pop() ?? false;
+        else if (char === "]") regexAllowed = false;
+        else if (char === "}") regexAllowed = true;
+        else regexAllowed = true;
+        lastWord = "";
+      }
     }
   }
   flush();

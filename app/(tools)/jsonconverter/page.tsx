@@ -11,6 +11,7 @@ const MODES = [
   { value: "YAML → JSON", label: "To JSON" },
 ] as const satisfies readonly { value: ConversionMode; label: string }[];
 const INDENTS = [{ value: "2", label: "2 spaces" }, { value: "4", label: "4 spaces" }, { value: "tab", label: "Tab" }] as const;
+const YAML_INDENTS = [{ value: "2", label: "2 spaces" }, { value: "4", label: "4 spaces" }, { value: "tab", label: "Tab", disabled: true }] as const;
 const SOURCE: Record<ConversionMode, string> = { PRETTY: "JSON", MINIFY: "JSON", "JSON → YAML": "JSON", "YAML → JSON": "YAML" };
 const RESULT: Record<ConversionMode, string> = { PRETTY: "Formatted JSON", MINIFY: "Minified JSON", "JSON → YAML": "YAML", "YAML → JSON": "JSON" };
 /** Swap uses the result as the next input: a conversion flips direction, Format and Minify keep their mode. */
@@ -44,14 +45,12 @@ export default function JsonConverterTool() {
     setMode(SWAPPED[mode]);
     setAnnouncement(`Swapped. The result is now the input (${SOURCE[SWAPPED[mode]]}).`);
   };
+  // Focus and select the character; the browser scrolls the selection into view, which stays right when long lines wrap.
   const goToProblem = () => {
     const area = editor.current;
     if (!area || problem?.offset === null || problem?.offset === undefined) return;
     area.focus();
     area.setSelectionRange(problem.offset, Math.min(input.length, problem.offset + 1));
-    // Scroll the line into view: roughly line height × line number.
-    const lineHeight = parseFloat(getComputedStyle(area).lineHeight) || 24;
-    area.scrollTop = Math.max(0, ((problem.line ?? 1) - 3) * lineHeight);
   };
 
   return (
@@ -60,8 +59,8 @@ export default function JsonConverterTool() {
 
       <div className="wb-controls">
         <Segmented label="Conversion" options={MODES} value={mode} onChange={setMode} />
-        {/* Indent applies to formatted JSON (Format, To JSON); To YAML uses 2 or 4 spaces. */}
-        <Segmented label="Indent" options={INDENTS} value={indent} onChange={setIndent} disabled={mode === "MINIFY"} />
+        {/* Indent applies to formatted JSON (Format, To JSON); YAML forbids tabs, so To YAML shows Tab disabled and 2 spaces chosen. */}
+        <Segmented label="Indent" options={mode === "JSON → YAML" ? YAML_INDENTS : INDENTS} value={mode === "JSON → YAML" && indent === "tab" ? "2" : indent} onChange={setIndent} disabled={mode === "MINIFY"} />
       </div>
 
       <div className="wb-panes">

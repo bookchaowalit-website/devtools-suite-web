@@ -23,7 +23,8 @@ export function escapeHtml(value: string) {
 }
 
 const TABLE_RULE = /^\|?\s*:?-+:?\s*(\|\s*:?-+:?\s*)*\|?\s*$/;
-const cells = (row: string) => row.trim().replace(/^\|/, "").replace(/\|$/, "").split("|").map((cell) => cell.trim());
+/** Table cells split on "|" but not on an escaped "\\|", which becomes a literal "|" in the cell. */
+const cells = (row: string) => row.trim().replace(/^\|/, "").replace(/(?<!\\)\|$/, "").split(/(?<!\\)\|/).map((cell) => cell.trim().replace(/\\\|/g, "|"));
 
 /**
  * Small Markdown renderer: headings 1–6, bold, italic, code, links, quotes, fenced code, bullet and numbered lists

@@ -17,7 +17,11 @@ export function lineDiff(left: string, right: string): Op[] {
 
 /** Line diff: common lines at the start and end are matched first, then an LCS over the changed middle only. */
 export function diffLines(left: string, right: string): DiffResult {
-  const a = toLines(left); const b = toLines(right);
+  return diffArrays(toLines(left), toLines(right));
+}
+
+/** The line diff of two line arrays (shared by the page view and the patch export). */
+function diffArrays(a: string[], b: string[]): DiffResult {
   let head = 0;
   while (head < a.length && head < b.length && a[head] === b[head]) head++;
   let tail = 0;
@@ -84,31 +88,33 @@ export function pairChanges(ops: Op[]): Map<number, number> {
   return pairs;
 }
 
+/** Marks the last line of a text that does not end with a newline, so it never matches the same line with one. */
+const NO_EOL_MARK = "\u0000no-eol";
+
+/** Lines of a text for a patch: "" has none, "\n" is one empty line, and a missing final newline is marked on the last line. */
+function patchLines(text: string): string[] {
+  if (text === "") return [];
+  const eol = text.endsWith("\n");
+  const lines = (eol ? text.slice(0, -1) : text).split("\n");
+  if (!eol) lines[lines.length - 1] += NO_EOL_MARK;
+  return lines;
+}
+
 /**
- * Two texts as one unified-diff hunk that `git apply` and `patch` accept: every line ends with a newline, the final
- * newline of each text is not counted as an extra empty line, and a side whose text does not end with a newline gets
- * "\ No newline at end of file" after its last line (the last shared line is split into - and + when only one side
- * ends with a newline).
+ * Two texts as one unified-diff hunk that `git apply` and `patch` accept: every line ends with a newline, an empty
+ * line is a line (not an empty file), and a line without a final newline only matches the same line without one, so it
+ * shows as changed and gets "\ No newline at end of file" after it.
  */
 export function unifiedDiff(left: string, right: string, { from = "original", to = "changed" }: { from?: string; to?: string } = {}): string {
-  const leftEol = left.endsWith("\n"); const rightEol = right.endsWith("\n");
-  const ops = diffLines(leftEol ? left.slice(0, -1) : left, rightEol ? right.slice(0, -1) : right).ops;
-  const last = ops[ops.length - 1];
-  if (last && last.type === "equal" && leftEol !== rightEol) {
-    ops.splice(ops.length - 1, 1, { type: "del", line: last.line, left: last.left, right: null }, { type: "add", line: last.line, left: null, right: last.right });
-  }
+  const { ops } = diffArrays(patchLines(left), patchLines(right));
   const leftCount = ops.filter((op) => op.type !== "add").length;
   const rightCount = ops.filter((op) => op.type !== "del").length;
-  const lastLeft = ops.reduce((at, op, index) => (op.type !== "add" ? index : at), -1);
-  const lastRight = ops.reduce((at, op, index) => (op.type !== "del" ? index : at), -1);
-  const NO_EOL = "\\ No newline at end of file\n";
   let body = "";
-  ops.forEach((op, index) => {
-    body += `${op.type === "add" ? "+" : op.type === "del" ? "-" : " "}${op.line}\n`;
-    const endsLeft = index === lastLeft && !leftEol && left !== "";
-    const endsRight = index === lastRight && !rightEol && right !== "";
-    if ((op.type === "del" && endsLeft) || (op.type === "add" && endsRight) || (op.type === "equal" && endsLeft && endsRight)) body += NO_EOL;
-  });
+  for (const op of ops) {
+    const noEol = op.line.endsWith(NO_EOL_MARK);
+    body += `${op.type === "add" ? "+" : op.type === "del" ? "-" : " "}${noEol ? op.line.slice(0, -NO_EOL_MARK.length) : op.line}\n`;
+    if (noEol) body += "\\ No newline at end of file\n";
+  }
   const range = (count: number) => `${count ? 1 : 0},${count}`;
   return `--- ${from}\n+++ ${to}\n@@ -${range(leftCount)} +${range(rightCount)} @@\n${body}`;
 }

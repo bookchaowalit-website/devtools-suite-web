@@ -47,3 +47,7 @@ test("a table ends where the next block starts", () => {
   assert.equal(renderMarkdown("| A |\n| - |\n| 1 |\n## C | D"), '<table><thead><tr><th scope="col">A</th></tr></thead><tbody><tr><td>1</td></tr></tbody></table><h2>C | D</h2>');
   assert.equal(renderMarkdown("| A |\n| - |\n- x | y"), '<table><thead><tr><th scope="col">A</th></tr></thead><tbody></tbody></table><ul><li>x | y</li></ul>');
 });
+
+test("an escaped pipe stays inside its table cell", () => {
+  assert.equal(renderMarkdown("| A | B |\n| - | - |\n| a \\| b | next |"), '<table><thead><tr><th scope="col">A</th><th scope="col">B</th></tr></thead><tbody><tr><td>a | b</td><td>next</td></tr></tbody></table>');
+});
