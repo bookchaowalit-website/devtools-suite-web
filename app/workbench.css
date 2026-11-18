@@ -490,3 +490,12 @@
   .wb-options-beam .wb-option > span:last-child { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
 }
 .wb-pane-switch { padding: 4px 16px 8px; border-top: 1px solid var(--wb-line); }
+/* Colour values stay on one line: on phones the Copy buttons show only their icon (each has an aria-label). */
+.wb-fields-compact .wb-field code { white-space: nowrap; }
+@media (max-width: 720px) {
+  .wb-hide-phone { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
+  .wb-fields-compact .wb-field { gap: 8px; }
+  .wb-fields-compact .wb-field code { font-size: 15px; }
+  .wb-fields-compact .wb-button-plain { min-width: 44px; padding: 0 10px; }
+}
+@media (max-width: 359px) { .wb-fields-compact .wb-field code { font-size: 14px; } .wb-fields-compact .wb-field { grid-template-columns: 40px minmax(0, 1fr) auto; } }

@@ -67,7 +67,7 @@ export default function DateCalculatorTool() {
         </section>
       </div>
 
-      <p className="wb-hint">Dates use the Asia/Bangkok calendar. “In months” counts whole calendar months, then the days left over (Jan 31 to Feb 28 is one month).</p>
+      <p className="wb-hint">Dates use the Asia/Bangkok calendar. “In months” counts whole calendar months, then the days left over: Jan 31 to Feb 28 is one month.</p>
     </Workbench>
   );
 }

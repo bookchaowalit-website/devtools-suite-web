@@ -95,7 +95,7 @@ export default function MarkdownEditorTool() {
       <p className="wb-sr" role="status" aria-live="polite">{announcement}</p>
       <UndoToast state={undo} />
 
-      <p className="wb-hint">Covers headings, bold, italic, links, bullet and numbered lists (indent two spaces to nest), tables, quotes and code. Not a full CommonMark implementation. Nothing is saved unless you turn on “Keep draft in this browser”; that copy stays on this device only.</p>
+      <p className="wb-hint">Covers headings, bold, italic, links, bullet and numbered lists, nested by indenting two spaces, tables, quotes and code. Not a full CommonMark implementation. Nothing is saved unless you turn on “Keep draft in this browser”; that copy stays on this device only.</p>
     </Workbench>
   );
 }

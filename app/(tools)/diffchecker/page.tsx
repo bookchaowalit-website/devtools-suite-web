@@ -99,7 +99,7 @@ export default function DiffCheckerTool() {
       </section>
       <UndoToast state={undo} />
 
-      <p className="wb-hint">Compares whole lines. A changed line shows as one line removed and one added, with the words that differ highlighted. Copy diff gives a unified diff (--- / +++ / @@).</p>
+      <p className="wb-hint">Compares whole lines. A changed line shows as one line removed and one added, with the words that differ highlighted. Copy diff gives a unified diff that git apply and patch accept.</p>
     </Workbench>
   );
 }

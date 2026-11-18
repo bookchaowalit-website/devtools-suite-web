@@ -74,7 +74,7 @@ export default function ColorPickerTool() {
                 <span className="wb-field-label">{row.label}</span>
                 <code>{row.value}</code>
                 <button type="button" className="wb-button-plain" onClick={() => { setCopiedKey(row.key); void copy(row.value); }} aria-label={`Copy ${row.label} value`}>
-                  {copied && copiedKey === row.key ? <><CheckIcon />Copied</> : <><CopyIcon />Copy</>}
+                  {copied && copiedKey === row.key ? <><CheckIcon /><span className="wb-hide-phone">Copied</span></> : <><CopyIcon /><span className="wb-hide-phone">Copy</span></>}
                 </button>
               </div>
             ))}
