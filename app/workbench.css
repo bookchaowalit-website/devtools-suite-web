@@ -25,6 +25,7 @@
   --wb-success: #1a7f37;
   --wb-track: #e8e8ed;
   --wb-thumb: #ffffff;
+  --wb-seg-line: #6e6e73;
   --wb-shadow: 0 1px 2px rgb(0 0 0 / 4%), 0 8px 24px rgb(0 0 0 / 6%);
   --wb-radius: 18px;
   --wb-radius-sm: 10px;
@@ -45,6 +46,7 @@
     --wb-success: #30d158;
     --wb-track: #2c2c2e;
     --wb-thumb: #636366;
+    --wb-seg-line: #d2d2d7;
     --wb-shadow: none;
   }
 }
@@ -69,12 +71,20 @@
 
 .wb-segmented { display: inline-grid; grid-auto-flow: column; grid-auto-columns: 1fr; gap: 2px; padding: 2px; border-radius: 12px; background: var(--wb-track); }
 .wb-segmented button { min-height: 44px; min-width: 112px; padding: 0 18px; border: 0; border-radius: 10px; background: transparent; color: var(--wb-fg); font-size: 15px; font-weight: 500; cursor: pointer; transition: background-color .2s ease, box-shadow .2s ease; }
-.wb-segmented button[aria-pressed="true"] { background: var(--wb-thumb); font-weight: 600; box-shadow: 0 1px 3px rgb(0 0 0 / 12%); }
+/* The selected segment carries a 1px edge (--wb-seg-line: 4.1:1 on the track, 5.1:1 on the thumb in light;
+   9.3:1 / 4:1 in dark), so its state passes WCAG 1.4.11 without relying on the faint thumb fill. */
+.wb-segmented button[aria-pressed="true"] { background: var(--wb-thumb); font-weight: 600; box-shadow: inset 0 0 0 1px var(--wb-seg-line), 0 1px 3px rgb(0 0 0 / 12%); }
+.wb-segmented button:disabled { color: var(--wb-muted); cursor: not-allowed; }
 
 .wb-switch { display: inline-flex; align-items: center; gap: 12px; min-height: 44px; font-size: 15px; cursor: pointer; }
 .wb-switch input { appearance: none; position: relative; flex: none; width: 44px; height: 26px; margin: 0; border-radius: 13px; background: var(--wb-track); cursor: pointer; transition: background-color .2s ease; }
 .wb-switch input::after { content: ""; position: absolute; top: 2px; left: 2px; width: 22px; height: 22px; border-radius: 50%; background: #ffffff; box-shadow: 0 1px 3px rgb(0 0 0 / 25%); transition: transform .2s ease; }
+/* Off, the track gets a --wb-field-line edge (3.3:1 on --wb-bg, 4.9:1 dark) so the switch is visible at all. */
+.wb-switch input:not(:checked) { box-shadow: inset 0 0 0 1px var(--wb-field-line); }
 .wb-switch input:checked { background: var(--wb-success); }
+.wb-switch:has(input:disabled) { color: var(--wb-muted); cursor: not-allowed; }
+.wb-switch input:disabled { cursor: not-allowed; }
+.wb-switch input:disabled::after { background: var(--wb-track); box-shadow: inset 0 0 0 1px var(--wb-field-line); }
 .wb-switch input:checked::after { transform: translateX(18px); }
 .wb-switch small { display: block; color: var(--wb-muted); font-size: 13px; }
 
@@ -154,7 +164,7 @@
 .wb-field + .wb-field { border-top: 1px solid var(--wb-line); }
 .wb-field label { font-size: 15px; font-weight: 600; }
 .wb-field label small { display: block; color: var(--wb-muted); font-size: 13px; font-weight: 400; }
-.wb-field input { width: 100%; min-height: 44px; padding: 0 12px; border: 1px solid transparent; border-radius: var(--wb-radius-sm); background: var(--wb-bg); font-family: var(--wb-mono); font-size: 17px; }
+.wb-field input { width: 100%; min-height: 44px; padding: 0 12px; border: 1px solid var(--wb-field-line); border-radius: var(--wb-radius-sm); background: var(--wb-bg); font-family: var(--wb-mono); font-size: 17px; }
 .wb-field input:focus-visible { outline: 3px solid var(--wb-focus); outline-offset: 0; }
 .wb-field[data-invalid="true"] input { border-color: var(--wb-danger); }
 .wb-segmented-4 { grid-auto-columns: minmax(0, 1fr); }
@@ -209,8 +219,9 @@
 .wb-diff-line.is-add .mark { color: var(--wb-success); }
 .wb-diff-line.is-del { background: var(--wb-del-bg); }
 .wb-diff-line.is-del .mark { color: var(--wb-danger); }
-:root { --wb-add-bg: #edf8ef; --wb-del-bg: #fdecec; }
-@media (prefers-color-scheme: dark) { :root { --wb-add-bg: #0f2e18; --wb-del-bg: #3a1214; } }
+.wb-diff-line.is-del .no { color: var(--wb-del-no); }
+:root { --wb-add-bg: #edf8ef; --wb-del-bg: #fdecec; --wb-del-no: #5f5f64; }
+@media (prefers-color-scheme: dark) { :root { --wb-add-bg: #0f2e18; --wb-del-bg: #3a1214; --wb-del-no: #b4b4b9; } }
 
 @media (max-width: 720px) {
   .wb-color { grid-template-columns: 1fr; }
@@ -275,11 +286,11 @@
 .wb-palettes { grid-template-columns: repeat(auto-fill, minmax(min(100%, 200px), 1fr)); }
 .wb-palettes .wb-option { gap: 2px; padding: 12px 16px; }
 .wb-mini { display: grid; grid-template-columns: repeat(5, 1fr); height: 20px; margin-bottom: 6px; border-radius: 6px; overflow: hidden; }
-.wb-card-head { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-bottom: 12px; }
+.wb-card-head { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 12px; margin-bottom: 12px; }
 .wb-card-head h2 { margin: 0; }
 .wb-swatches { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 8px; }
-.wb-swatches button { display: flex; align-items: flex-end; justify-content: center; min-height: 140px; padding: 10px 6px; border: 1px solid rgb(0 0 0 / 8%); border-radius: 14px; cursor: pointer; }
-.wb-swatches span { padding: 4px 8px; border-radius: 8px; background: rgb(255 255 255 / 92%); color: #1d1d1f; font-family: var(--wb-mono); font-size: 13px; font-weight: 600; }
+.wb-swatches button { display: flex; align-items: flex-end; justify-content: center; min-height: 140px; padding: 10px 6px; border: 1px solid var(--wb-field-line); border-radius: 14px; cursor: pointer; }
+.wb-swatches span { display: inline-flex; align-items: center; gap: 4px; padding: 4px 8px; border-radius: 8px; background: rgb(255 255 255 / 92%); color: #1d1d1f; font-family: var(--wb-mono); font-size: 13px; font-weight: 600; }
 .wb-export { margin-top: 16px; }
 .wb-export .wb-segmented button { min-width: 0; padding: 0 14px; }
 .wb-code { margin: 0; padding: 16px; overflow: auto; font-family: var(--wb-mono); font-size: 14px; line-height: 1.6; }
@@ -314,9 +325,14 @@
 .wb-chips code { font-family: var(--wb-mono); font-weight: 700; }
 .wb-highlight { flex: 1; min-height: 220px; margin: 0; padding: 16px; font-family: var(--wb-mono); font-size: 15px; line-height: 1.8; white-space: pre-wrap; overflow-wrap: anywhere; }
 .wb-highlight:focus-visible { outline: 3px solid var(--wb-focus); outline-offset: -3px; }
+/* Match edges pass 3:1 (#8a6d00 4.8:1 on white, #1f5fbf 6.1:1); neighbouring matches alternate yellow and blue. */
 .wb-highlight mark { padding: 1px 0; border-radius: 4px; background: var(--wb-mark); color: inherit; box-shadow: 0 0 0 1px var(--wb-mark-line); }
-:root { --wb-mark: #fff1b8; --wb-mark-line: #e0b400; }
-@media (prefers-color-scheme: dark) { :root { --wb-mark: #4a3b00; --wb-mark-line: #a88400; } }
+.wb-highlight mark.is-alt { background: var(--wb-mark-alt); box-shadow: 0 0 0 1px var(--wb-mark-alt-line); }
+.wb-highlight .wb-group { border-bottom: 2px solid var(--wb-group-1); }
+.wb-highlight .wb-group-2 { border-bottom-color: var(--wb-group-2); border-bottom-style: dashed; }
+.wb-highlight .wb-group-3 { border-bottom-color: var(--wb-group-3); border-bottom-style: dotted; }
+:root { --wb-mark: #fff1b8; --wb-mark-line: #8a6d00; --wb-mark-alt: #e3efff; --wb-mark-alt-line: #1f5fbf; --wb-group-1: #b3261e; --wb-group-2: #1a7f37; --wb-group-3: #6e3fbf; }
+@media (prefers-color-scheme: dark) { :root { --wb-mark: #4a3b00; --wb-mark-line: #e0b400; --wb-mark-alt: #0d2a4d; --wb-mark-alt-line: #6aa9ff; --wb-group-1: #ff8a80; --wb-group-2: #5fd37a; --wb-group-3: #c3a4ff; } }
 .wb-table-flat { margin-top: 0; box-shadow: none; }
 .wb-table td em, .wb-table th em { color: var(--wb-muted); }
 @media (max-width: 720px) { .wb-regex input { flex: 1 1 0; } .wb-highlight { min-height: 120px; } }
@@ -337,8 +353,8 @@
 .wb-library-list ul { display: grid; gap: 2px; margin: 0; padding: 0; list-style: none; }
 .wb-library-list button { display: flex; width: 100%; min-height: 44px; flex-direction: column; justify-content: center; padding: 8px 12px; border: 0; border-radius: 10px; background: transparent; text-align: left; cursor: pointer; }
 .wb-library-list button:hover { background: var(--wb-track); }
-.wb-library-list button[aria-current="true"] { background: var(--wb-button); color: var(--wb-button-fg); }
-.wb-library-list button[aria-current="true"] span { color: inherit; }
+.wb-library-list button[aria-pressed="true"] { background: var(--wb-button); color: var(--wb-button-fg); }
+.wb-library-list button[aria-pressed="true"] span { color: inherit; }
 .wb-library-list strong { font-size: 15px; font-weight: 600; }
 .wb-library-list span { color: var(--wb-muted); font-size: 13px; }
 .wb-code-lines code { display: block; counter-reset: wb-line; }
@@ -361,12 +377,116 @@
 .wb-field[data-stale="true"] input { color: var(--wb-muted); font-style: italic; }
 .wb-empty-actions { display: grid; gap: 4px; justify-items: start; min-width: 0; }
 .wb-empty-actions .wb-note { margin: 4px 8px 0; max-width: 100%; overflow-wrap: anywhere; }
-/* Regex: the result pane is first in the DOM, matching its place above the editor on phones, so Tab order follows
-   the screen there. On wider screens the grid puts it back on the right, beside the editor. */
-.wb-panes-result-first > :first-child { grid-column: 2; grid-row: 1; }
-/* The preview above the editor is capped (and scrolls inside), so pasting a long log never pushes the test-text
-   editor screens down: the editor always starts within the first screen below it. */
+/* Regex: Test text is first in the DOM and on screen, so Tab reaches the editor before the results. On phones the
+   editor is compact (about four rows, resizable, scrolling inside) and the preview is capped, so the match count and
+   the highlight still land in the first screen, and a long paste never pushes them down. */
 @media (max-width: 720px) {
-  .wb-panes-result-first > :first-child { grid-column: auto; grid-row: auto; }
-  .wb-panes-result-first .wb-highlight { flex: none; max-height: min(40vh, 320px); overflow-y: auto; overscroll-behavior: contain; }
+  .wb-regex-panes textarea { flex: none; min-height: 96px; height: 96px; max-height: 40vh; padding: 12px 16px; overflow-y: auto; }
+  .wb-regex-panes .wb-pane-head { min-height: 44px; }
+  .wb-regex-panes .wb-highlight { flex: none; min-height: 88px; max-height: min(40vh, 320px); padding: 12px 16px; overflow-y: auto; overscroll-behavior: contain; }
+}
+.wb-card-body { padding: 12px 16px 0; }
+
+/* Added with the 2026-11-19 polish pass. */
+.wb-warning { display: flex; width: fit-content; margin-top: 6px; color: var(--wb-fg); }
+.wb-warning svg { color: var(--wb-danger); }
+/* "Copy was blocked" shown on screen, not only to screen readers. */
+.wb-note-alert { display: flex; gap: 6px; align-items: flex-start; color: var(--wb-danger); }
+.wb-note-alert svg { width: 16px; height: 16px; flex: none; margin-top: 3px; }
+.wb-pane > .wb-note-alert { margin: 0; padding: 10px 16px; border-top: 1px solid var(--wb-line); }
+/* Undo toast: bottom centre, above everything, never covering the page when empty. */
+.wb-toast { position: fixed; left: 50%; bottom: max(16px, env(safe-area-inset-bottom)); z-index: 60; transform: translateX(-50%); width: max-content; max-width: calc(100vw - 32px); pointer-events: none; }
+.wb-toast-body { display: flex; align-items: center; gap: 4px; min-height: 52px; padding: 4px 4px 4px 18px; border-radius: 980px; background: var(--wb-fg); color: var(--wb-bg); font-size: 15px; box-shadow: 0 8px 28px rgb(0 0 0 / 22%); pointer-events: auto; }
+.wb-toast-body span { margin-right: 8px; }
+.wb-toast-undo, .wb-toast-close { min-width: 44px; min-height: 44px; padding: 0 14px; border: 0; border-radius: 980px; background: transparent; color: var(--wb-toast-action); font-size: 15px; font-weight: 600; cursor: pointer; }
+.wb-toast-close { padding: 0; color: inherit; font-size: 20px; font-weight: 400; }
+.wb-toast-undo:hover, .wb-toast-close:hover { background: rgb(127 127 127 / 25%); }
+:root { --wb-toast-action: #64b5ff; }
+@media (prefers-color-scheme: dark) { :root { --wb-toast-action: #0058b0; } }
+/* Two inputs that belong together (start / end, span / load) stay on one row even on phones. */
+.wb-inputs-pair { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+.wb-inputs-pair > .wb-segmented { grid-column: 1 / -1; }
+/* Preset chips scroll sideways on phones instead of stacking three rows deep. */
+@media (max-width: 720px) {
+  /* 6px of padding keeps the 3px focus ring (plus its 2px offset) inside the scroll box, which would clip it. */
+  .wb-chips-scroll { flex-wrap: nowrap; overflow-x: auto; margin: 10px -6px 0; padding: 6px; scrollbar-width: thin; }
+  .wb-chips-scroll button { flex: none; }
+}
+.wb-chips small { display: block; color: var(--wb-muted); font-size: 13px; font-weight: 400; line-height: 1.2; }
+.wb-chips-described button { display: flex; flex-direction: column; justify-content: center; align-items: flex-start; padding: 4px 14px; text-align: left; }
+.wb-chips button[aria-pressed="true"] small { color: inherit; }
+.wb-tag { display: inline-flex; align-items: center; gap: 4px; padding: 1px 8px; border: 1px solid var(--wb-field-line); border-radius: 980px; color: var(--wb-muted); font-size: 12px; font-weight: 500; white-space: nowrap; }
+.wb-search-labelled { display: grid; gap: 6px; font-size: 15px; font-weight: 600; }
+.wb-search-labelled input { font-weight: 400; }
+.wb-search-row { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 12px; }
+.wb-count { color: var(--wb-muted); font-size: 14px; font-weight: 400; font-variant-numeric: tabular-nums; }
+.wb-figures .wb-figure-text { font-size: clamp(19px, 2.6vw, 24px); line-height: 1.25; letter-spacing: -.01em; }
+.wb-callout { display: flex; gap: 8px; align-items: flex-start; margin: 0 0 16px; padding: 12px 16px; border: 1px solid var(--wb-danger); border-radius: 14px; background: var(--wb-surface); font-size: 15px; line-height: 1.5; }
+.wb-callout svg { width: 18px; height: 18px; flex: none; margin-top: 2px; color: var(--wb-danger); }
+.wb-verdict { display: inline-flex; align-items: center; gap: 6px; font-weight: 600; }
+.wb-verdict svg { width: 18px; height: 18px; flex: none; }
+.wb-verdict.is-match { color: var(--wb-success); }
+.wb-verdict.is-mismatch { color: var(--wb-danger); }
+.wb-drop { display: grid; place-items: center; gap: 8px; flex: 1; min-height: 220px; margin: 12px; padding: 16px; border: 2px dashed var(--wb-field-line); border-radius: 14px; text-align: center; color: var(--wb-muted); font-size: 15px; }
+.wb-drop[data-over="true"] { border-color: var(--wb-accent); background: var(--wb-bg); }
+.wb-drop strong { color: var(--wb-fg); overflow-wrap: anywhere; }
+.wb-beam { display: block; width: 100%; max-width: 160px; height: auto; margin-bottom: 6px; color: var(--wb-fg); }
+.wb-diff-line .wb-word-del { border-radius: 3px; background: var(--wb-del-word); text-decoration: line-through; text-decoration-thickness: 1px; }
+.wb-diff-line .wb-word-add { border-radius: 3px; background: var(--wb-add-word); }
+:root { --wb-del-word: #f8c4c4; --wb-add-word: #b9e8c3; }
+@media (prefers-color-scheme: dark) { :root { --wb-del-word: #6e2226; --wb-add-word: #1f5a30; } }
+.wb-diff-tools { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 16px; }
+.wb-prose table { width: 100%; margin: 16px 0; border-collapse: collapse; font-size: 15px; }
+.wb-prose th, .wb-prose td { padding: 8px 10px; border: 1px solid var(--wb-line); text-align: left; vertical-align: top; }
+.wb-prose th { background: var(--wb-bg); font-weight: 600; }
+.wb-prose h4 { margin: 20px 0 6px; font-size: 17px; font-weight: 600; }
+.wb-prose h5, .wb-prose h6 { margin: 16px 0 6px; font-size: 15px; font-weight: 600; }
+.wb-prose h6 { color: var(--wb-muted); }
+/* The preview's top heading is an h2 on the page (the page owns the h1) but keeps the h1 size. */
+.wb-prose .md-h1 { margin: 0 0 16px; font-size: 32px; line-height: 1.15; letter-spacing: -.02em; font-weight: 700; }
+.wb-prose .md-h2 { margin: 28px 0 8px; font-size: 24px; line-height: 1.2; letter-spacing: -.01em; font-weight: 700; }
+.wb-prose .md-h3 { margin: 24px 0 8px; font-size: 19px; font-weight: 600; }
+.wb-prose li > ul, .wb-prose li > ol { margin: 4px 0; }
+.wb-saved { display: inline-flex; align-items: center; gap: 4px; }
+.wb-saved svg { width: 14px; height: 14px; color: var(--wb-success); }
+@media (max-width: 720px) {
+  .wb-color-values-first > .wb-fields { order: -1; }
+  .wb-figures-3 { grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; }
+  .wb-figures-3 div { padding: 10px 12px; }
+  .wb-figures-3 dd { font-size: 24px; }
+  .wb-figures-3 .wb-figure-text { font-size: 16px; }
+  /* Palettes: one sideways-scrolling row of options so the swatches stay in the first screen. */
+  .wb-palettes { display: flex; overflow-x: auto; gap: 8px; margin-inline: -6px; padding: 6px; scroll-snap-type: x proximity; scroll-padding-inline: 6px; }
+  .wb-palettes .wb-option { flex: 0 0 150px; scroll-snap-align: start; }
+  .wb-options-2 { grid-template-columns: 1fr 1fr; }
+}
+.wb-inputs-rgb { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+.wb-fields-compact .wb-field { grid-template-columns: 56px minmax(0, 1fr) auto; }
+@media (max-width: 720px) { .wb-fields-compact .wb-field { grid-template-columns: 48px minmax(0, 1fr) auto; } .wb-fields-compact .wb-field .wb-field-label { grid-column: auto; } }
+/* Clipboard items: Delete sits last with a gap, away from Copy. */
+.wb-item-tools { gap: 4px; }
+.wb-item-delete { margin-left: 12px; }
+.wb-items li > .wb-note-alert { margin: 0; padding: 0 16px 10px; }
+.wb-note[data-invalid="true"] { color: var(--wb-danger); }
+.wb-fields > .wb-note-alert { margin: 0; padding: 10px 16px; border-top: 1px solid var(--wb-line); }
+.wb-swatches span svg { width: 14px; height: 14px; flex: none; }
+.wb-note-top { margin: -4px 0 12px; }
+.wb-diff > .wb-note-alert { margin: 0; padding: 10px 16px; border-bottom: 1px solid var(--wb-line); }
+.wb-drop:has(input:focus-visible) { outline: 3px solid var(--wb-focus); outline-offset: 2px; }
+.wb-drop { cursor: pointer; }
+.wb-link { display: inline; min-height: 0; padding: 0; border: 0; background: none; color: var(--wb-accent); font: inherit; font-weight: 600; text-decoration: underline; text-underline-offset: 3px; cursor: pointer; }
+.wb-error .wb-link { color: inherit; }
+.wb-pane > .wb-pane-note { margin: 0; padding: 10px 16px; border-top: 1px solid var(--wb-line); }
+.wb-code-wrap { white-space: pre-wrap; overflow-wrap: anywhere; }
+/* Grid items and date inputs keep an intrinsic minimum width; let paired fields shrink to their column. */
+.wb-input, .wb-input input { min-width: 0; }
+@media (max-width: 720px) { .wb-inputs-pair .wb-input input { padding: 0 8px; font-size: 16px; } }
+/* A fieldset is min-content wide by default, so the sideways-scrolling palette row would widen the page. */
+.wb-options { min-width: 0; min-inline-size: 0; }
+/* Engineering: the unit switch sits in the Inputs header, compact; on phones the diagrams carry the case and the
+   one-line notes are kept for screen readers only, so the result stays near the first screen. */
+.wb-card-head .wb-segmented { width: auto; }
+.wb-card-head .wb-segmented button { min-width: 64px; padding: 0 14px; }
+@media (max-width: 720px) {
+  .wb-options-beam .wb-option > span:last-child { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
 }

@@ -17,14 +17,20 @@ made the suite feel like seventeen sites. One shell fixes these once.
 - **Live result.** The output follows the input as you type; no separate "convert" step when the work is cheap.
 - **One filled button.** The main action (usually Copy) is the only `.wb-button`; everything else is `.wb-button-plain`.
 - **First screen on a phone (375×812)** shows the input and the main action.
-- **Floor:** text ≥ 12px (body 15–17px), every control ≥ 44px tall, 3px focus ring, 4.5:1 text contrast in light and dark.
+- **Floor:** text ≥ 12px (body 15–17px), every control ≥ 44px tall, 3px focus ring, 4.5:1 text contrast in light and dark,
+  3:1 for control edges and state (selected segment, off switch, field borders, swatch edges).
+- **Nothing only for screen readers that sighted users need.** A blocked copy shows `<CopyBlocked>` on screen too.
+- **Undo, not confirm.** Delete, Clear and Reset act at once and offer Undo in `<UndoToast>` for a few seconds.
+- **Controls do not jump.** An option that only applies to one mode stays in place, disabled, in the other mode.
+- **Tab order follows the screen:** input before result in the DOM; never reorder with grid placement or `order`.
 
 ## Pieces
 
 | Piece | Where |
 |---|---|
 | Tokens `--wb-*` (light + dark), layout, segmented control, switch, panes, buttons | `app/workbench.css` |
-| `Workbench`, `ToolIntro`, `Segmented`, `useCopy`, `useIsClient` (clock/time-zone values after hydration), icons | `components/workbench.tsx` |
+| `Workbench`, `ToolIntro` (optional `warning` line with an alert icon), `Segmented` (optional `disabled`), `useCopy` (`copied`, `blocked`) with `CopyBlocked`, `useUndo` with `UndoToast`, `useIsClient` (clock/time-zone values after hydration), icons | `components/workbench.tsx` |
+| Undo toast (`.wb-toast`), visible alert note (`.wb-note-alert`), callout (`.wb-callout`), side-scrolling chips on phones (`.wb-chips-scroll`), chips with a description line (`.wb-chips-described`), paired inputs that stay on one row (`.wb-inputs-pair`), small tag (`.wb-tag`), visible search label (`.wb-search-labelled`), file drop zone (`.wb-drop`) | `app/workbench.css` (2026-11-19) |
 | Option cards (`.wb-options` radio group), result table (`.wb-table`), read-only digest (`.wb-digest`), labelled field rows (`.wb-fields`), size stats (`.wb-stats`), cards with input grids and big figures (`.wb-card`, `.wb-inputs`, `.wb-figures`), color swatch (`.wb-swatch`), line diff (`.wb-diff`), big expression input (`.wb-expression`), preset chips (`.wb-chips`), numbered list (`.wb-list`), Markdown preview (`.wb-prose`), palette swatches (`.wb-swatches`), code block (`.wb-code`); 4+ segments wrap 2×2 on phones | `app/workbench.css` |
 | Suite header (translucent bar) and footer with hub + source links | `app/layout.tsx`, `app/globals.css` |
 

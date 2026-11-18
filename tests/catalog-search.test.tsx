@@ -2,9 +2,9 @@ import { readFileSync } from "node:fs";
 import { renderToString } from "react-dom/server";
 import { describe, expect, it } from "vitest";
 import { ToolCatalog } from "@/components/tool-catalog";
-import { filterTools, TOOLS, toolPath } from "@/lib/tools";
+import { filterTools, TOOL_GROUPS, TOOLS, toolPath } from "@/lib/tools";
 
-const ENTRIES = TOOLS.map(({ slug, name, description, keywords }) => ({ slug, name, description, keywords, path: toolPath({ slug }) }));
+const ENTRIES = TOOLS.map(({ slug, name, description, keywords, group }) => ({ slug, name, description, keywords, group, path: toolPath({ slug }) }));
 
 describe("filterTools", () => {
   it("matches name and description, case-insensitive, every word", () => {
@@ -75,7 +75,34 @@ describe("suite header on phones", () => {
     const layout = readFileSync(new URL("../app/layout.tsx", import.meta.url), "utf8");
     expect(css).not.toMatch(/\.suite-hub\s*\{\s*display:\s*none/);
     expect(css).toMatch(/\.suite-home\s*\{\s*display:\s*none/);
-    expect(layout).toContain('className="suite-home">All tools</Link>');
+    const homeLink = readFileSync(new URL("../components/suite-home-link.tsx", import.meta.url), "utf8");
+    expect(layout).toContain("<SuiteHomeLink />");
+    expect(homeLink).toContain('className="suite-home">All tools</Link>');
+    // On the home page the link would point at the page itself, beside the brand link: it is left out there.
+    expect(homeLink).toMatch(/if \(pathname === "\/"\) return null;/);
     expect(layout).toContain('href="https://bookchaowalit.com/" className="suite-hub"');
+  });
+});
+
+describe("home page grouping", () => {
+  it("lists the 17 cards under job headings, every tool in exactly one known group", () => {
+    const html = renderToString(<ToolCatalog tools={ENTRIES} />);
+    for (const group of TOOL_GROUPS) expect(html).toContain(`id="group-${group.id}"`);
+    expect(html).not.toContain('id="group-other"');
+    for (const tool of TOOLS) expect(TOOL_GROUPS.some((group) => group.id === tool.group), tool.slug).toBe(true);
+    expect(html.match(/<h3>/g)?.length).toBe(TOOLS.length);
+  });
+
+  it("a search keeps only the sections that have a match", () => {
+    const html = renderToString(<ToolCatalog tools={ENTRIES} initialQuery="cron" />);
+    expect(html).toContain('id="group-time"');
+    expect(html).not.toContain('id="group-encode"');
+  });
+
+  it("the card path is muted, not link blue, and the h1 is not the brand name again", () => {
+    const css = readFileSync(new URL("../app/globals.css", import.meta.url), "utf8");
+    expect(css).toMatch(/\.catalog-card code \{[^}]*color: var\(--wb-muted\)/);
+    const page = readFileSync(new URL("../app/page.tsx", import.meta.url), "utf8");
+    expect(page).toContain("<h1>Developer tools that run in your browser</h1>");
   });
 });

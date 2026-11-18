@@ -3,6 +3,7 @@ import Link from "next/link";
 import { Inter } from "next/font/google";
 import "./globals.css";
 import "./workbench.css";
+import { SuiteHomeLink } from "@/components/suite-home-link";
 import { SITE_URL, SUITE_NAME } from "@/lib/site";
 import { TOOLS } from "@/lib/tools";
 
@@ -35,7 +36,7 @@ export default function RootLayout({ children }: Readonly<{ children: React.Reac
         <header className="suite-header">
           <Link href="/" className="suite-brand">{SUITE_NAME}</Link>
           <nav aria-label="Suite">
-            <Link href="/" className="suite-home">All tools</Link>
+            <SuiteHomeLink />
             <a href="https://bookchaowalit.com/" className="suite-hub">Bookchaowalit</a>
           </nav>
         </header>

@@ -40,13 +40,17 @@ export const SwapIcon = () => (
   </svg>
 );
 
-/** Title, one plain sentence of what the tool does, and the "runs in your browser" note. */
-export function ToolIntro({ title, summary, privacy = "Runs in your browser. Nothing you type is uploaded." }: { title: string; summary: string; privacy?: string }) {
+/**
+ * Title, one plain sentence of what the tool does, and the "runs in your browser" note. A `warning` (for example
+ * "not an engineering approval") gets its own line with an alert icon, so it never hides behind the privacy lock.
+ */
+export function ToolIntro({ title, summary, privacy = "Runs in your browser. Nothing you type is uploaded.", warning }: { title: string; summary: string; privacy?: string; warning?: string }) {
   return (
     <header className="wb-intro">
       <h1>{title}</h1>
       <p>{summary}</p>
       <span className="wb-private"><LockIcon />{privacy}</span>
+      {warning ? <span className="wb-private wb-warning"><AlertIcon />{warning}</span> : null}
     </header>
   );
 }
@@ -54,12 +58,12 @@ export function ToolIntro({ title, summary, privacy = "Runs in your browser. Not
 export type SegmentOption<T extends string> = { value: T; label: string };
 
 /** Apple-style segmented control for a small set of exclusive modes. */
-export function Segmented<T extends string>({ label, options, value, onChange }: { label: string; options: readonly SegmentOption<T>[]; value: T; onChange: (next: T) => void }) {
+export function Segmented<T extends string>({ label, options, value, onChange, disabled = false }: { label: string; options: readonly SegmentOption<T>[]; value: T; onChange: (next: T) => void; disabled?: boolean }) {
   // Four or more segments wrap to a 2×2 grid on phones (.wb-segmented-4).
   return (
     <div className={options.length >= 4 ? "wb-segmented wb-segmented-4" : "wb-segmented"} role="group" aria-label={label}>
       {options.map((option) => (
-        <button key={option.value} type="button" aria-pressed={value === option.value} onClick={() => onChange(option.value)}>
+        <button key={option.value} type="button" aria-pressed={value === option.value} disabled={disabled} onClick={() => onChange(option.value)}>
           {option.label}
         </button>
       ))}
@@ -71,20 +75,65 @@ export function Segmented<T extends string>({ label, options, value, onChange }:
  * Copies text and shows "Copied" for a moment; the parent announces the result through its live region.
  * `copied` is true only while `current` is still the text that was copied, so editing the input right
  * after copying never leaves a "Copied" label on a result that is not in the clipboard.
+ * `blocked` is true while `current` is the text the browser refused to copy: show <CopyBlocked> for it,
+ * because the live region alone is invisible to sighted users.
  */
 export function useCopy(current: string, onResult?: (copied: boolean) => void) {
   const [copiedText, setCopiedText] = useState<string | null>(null);
+  const [blockedText, setBlockedText] = useState<string | null>(null);
   const timer = useRef<number | undefined>(undefined);
   useEffect(() => () => window.clearTimeout(timer.current), []);
   const copy = async (text: string) => {
     let ok = false;
     try { await navigator.clipboard.writeText(text); ok = true; } catch { ok = false; }
     setCopiedText(ok ? text : null);
+    setBlockedText(ok ? null : text);
     onResult?.(ok);
     window.clearTimeout(timer.current);
     if (ok) timer.current = window.setTimeout(() => setCopiedText(null), 1600);
   };
-  return { copied: copiedText !== null && copiedText === current, copy };
+  return { copied: copiedText !== null && copiedText === current, blocked: blockedText !== null && blockedText === current, copy };
+}
+
+/** The visible "copy was blocked" note shown under a copy button (screen readers already hear it from the live region). */
+export function CopyBlocked({ show, what = "the result" }: { show: boolean; what?: string }) {
+  if (!show) return null;
+  return <p className="wb-note wb-note-alert" aria-hidden="true"><AlertIcon />Copy was blocked by the browser. Select {what} and copy it by hand.</p>;
+}
+
+export type UndoState = { pending: { message: string; restore: () => void } | null; offer: (message: string, restore: () => void) => void; undo: () => void; dismiss: () => void };
+
+/**
+ * Undo for destructive actions (delete, clear, reset): call `offer("Cleared.", restore)` after the change and
+ * render <UndoToast state={…} /> once per page. The offer stays for `ms` milliseconds.
+ */
+export function useUndo(ms = 6000): UndoState {
+  const [pending, setPending] = useState<UndoState["pending"]>(null);
+  const timer = useRef<number | undefined>(undefined);
+  useEffect(() => () => window.clearTimeout(timer.current), []);
+  const dismiss = () => { window.clearTimeout(timer.current); setPending(null); };
+  const offer = (message: string, restore: () => void) => {
+    window.clearTimeout(timer.current);
+    setPending({ message, restore });
+    timer.current = window.setTimeout(() => setPending(null), ms);
+  };
+  const undo = () => { pending?.restore(); dismiss(); };
+  return { pending, offer, undo, dismiss };
+}
+
+/** A small toast with an Undo button. The status container is always rendered so screen readers hear each offer. */
+export function UndoToast({ state }: { state: UndoState }) {
+  return (
+    <div className="wb-toast" role="status" aria-live="polite">
+      {state.pending ? (
+        <div className="wb-toast-body">
+          <span>{state.pending.message}</span>
+          <button type="button" className="wb-toast-undo" onClick={state.undo}>Undo</button>
+          <button type="button" className="wb-toast-close" onClick={state.dismiss} aria-label="Dismiss">×</button>
+        </div>
+      ) : null}
+    </div>
+  );
 }
 
 const noopSubscribe = () => () => {};
