@@ -173,7 +173,7 @@ describe("the last five tools on the Workbench shell", () => {
 describe("/regex on phones", () => {
   it("caps the preview shown above the editor, so a long paste cannot push the editor screens down", () => {
     const css = readFileSync(new URL("../app/workbench.css", import.meta.url), "utf8");
-    const phone = css.slice(css.indexOf(".wb-panes-result-first > :last-child { order: -1; }"));
+    const phone = css.slice(css.indexOf(".wb-panes-result-first > :first-child { grid-column: auto; grid-row: auto; }"));
     expect(phone).toMatch(/\.wb-panes-result-first \.wb-highlight \{[^}]*max-height: min\(40vh, 320px\);[^}]*overflow-y: auto;/);
   });
 });
@@ -194,5 +194,17 @@ describe("/regex preview for keyboard users", () => {
     expect(html).toMatch(/<div class="wb-highlight" role="region" aria-label="Highlighted matches" tabindex="0">/);
     const css = readFileSync(new URL("../app/workbench.css", import.meta.url), "utf8");
     expect(css).toMatch(/\.wb-highlight:focus-visible \{ outline: 3px solid var\(--wb-focus\)/);
+  });
+});
+
+// Phones show the result above the editor; the DOM must say the same so Tab follows the screen (Codex review, 2026-11-19).
+describe("/regex focus order", () => {
+  it("puts the result pane before the test text in the DOM, with no CSS order swap", () => {
+    const html = renderToString(<RegexTool />);
+    expect(html.indexOf('aria-label="Highlighted matches"')).toBeGreaterThan(-1);
+    expect(html.indexOf('aria-label="Highlighted matches"')).toBeLessThan(html.indexOf('id="regex-text"'));
+    const css = readFileSync(new URL("../app/workbench.css", import.meta.url), "utf8");
+    expect(css).not.toMatch(/\.wb-panes-result-first[^{]*\{[^}]*order:/);
+    expect(css).toMatch(/\n\.wb-panes-result-first > :first-child \{ grid-column: 2; grid-row: 1; \}/);
   });
 });

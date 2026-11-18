@@ -44,14 +44,8 @@ export default function RegexTool() {
       <p className="wb-sr" role="status" aria-live="polite">{announcement}</p>
 
       <div className="wb-panes wb-panes-gap wb-panes-result-first">
-        <section className="wb-pane">
-          <div className="wb-pane-head">
-            <label htmlFor="regex-text">Test text</label>
-            <button type="button" className="wb-button-plain" onClick={() => setText("")} disabled={!text}>Clear</button>
-          </div>
-          <textarea id="regex-text" value={text} onChange={(event) => setText(event.target.value)} placeholder="Paste text to search" spellCheck={false} />
-          <p className="wb-pane-meta">{text.length} characters</p>
-        </section>
+        {/* The result comes first in the DOM, as it is shown first on phones, so Tab follows the screen; the
+            desktop grid puts it back in the right-hand column. */}
         <section className="wb-pane" aria-labelledby="regex-preview">
           <div className="wb-pane-head">
             <h2 id="regex-preview">Matches highlighted</h2>
@@ -61,6 +55,14 @@ export default function RegexTool() {
           <div className="wb-highlight" role="region" aria-label="Highlighted matches" tabIndex={0}>
             {text ? parts.map((part, index) => (part.match ? <mark key={index}>{part.text}</mark> : <span key={index}>{part.text}</span>)) : <span className="wb-muted">Matches appear here.</span>}
           </div>
+        </section>
+        <section className="wb-pane">
+          <div className="wb-pane-head">
+            <label htmlFor="regex-text">Test text</label>
+            <button type="button" className="wb-button-plain" onClick={() => setText("")} disabled={!text}>Clear</button>
+          </div>
+          <textarea id="regex-text" value={text} onChange={(event) => setText(event.target.value)} placeholder="Paste text to search" spellCheck={false} />
+          <p className="wb-pane-meta">{text.length} characters</p>
         </section>
       </div>
 

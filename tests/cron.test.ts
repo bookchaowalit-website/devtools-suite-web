@@ -66,7 +66,9 @@ describe("describe and nextRuns", () => {
   it("spells out minute lists that mix steps and single values, matching the real run times", () => {
     expect(describeCron("*/15,7 * * * *")).toBe("at minutes 0, 7, 15, 30 and 45 of every hour; every day · all months · all weekdays");
     // nextRuns agrees: 08:07, 08:15, 08:30, 08:45, 09:00 after 08:00 (minutes 0, 7, 15, 30, 45).
-    expect(nextRuns("*/15,7 * * * *", 5).map((run) => run.match(/:(\d\d)/)?.[1])).toEqual(["07", "15", "30", "45", "00"]);
+    // Expected values use the same formatter as nextRuns, so the check holds in any locale and time zone.
+    const at = (hour: number, minute: number) => new Date(2026, 10, 16, hour, minute).toLocaleString([], { dateStyle: "medium", timeStyle: "short" });
+    expect(nextRuns("*/15,7 * * * *", 5)).toEqual([at(8, 7), at(8, 15), at(8, 30), at(8, 45), at(9, 0)]);
     expect(describeCron("0,30 * * * *")).toBe("at minutes 0 and 30 of every hour; every day · all months · all weekdays");
     expect(describeCron("5-7 * * * *")).toBe("at minutes 5, 6 and 7 of every hour; every day · all months · all weekdays");
     expect(describeCron("10-50/40 * * * *")).toBe("at minutes 10 and 50 of every hour; every day · all months · all weekdays");
