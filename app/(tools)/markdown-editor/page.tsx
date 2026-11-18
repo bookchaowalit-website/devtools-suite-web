@@ -68,7 +68,7 @@ export default function MarkdownEditorTool() {
           <div className="wb-pane-head">
             <label htmlFor="md-source">Markdown</label>
             <div className="wb-pane-tools">
-              <button type="button" className="wb-button-plain" onClick={reset} disabled={source === SAMPLE}>Reset to sample</button>
+              <button type="button" className="wb-button-plain" onClick={reset} disabled={source === SAMPLE} aria-label="Reset to the sample text">Reset</button>
               <button type="button" className="wb-button" onClick={() => copy(source)} disabled={!source}>
                 {copied ? <><CheckIcon />Copied</> : <><CopyIcon />Copy</>}
               </button>
