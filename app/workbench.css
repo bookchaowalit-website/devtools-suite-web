@@ -344,7 +344,7 @@
 .wb-code-lines span { display: block; counter-increment: wb-line; white-space: pre; }
 .wb-code-lines span::before { content: counter(wb-line); display: inline-block; width: 3ch; margin-right: 16px; color: var(--wb-muted); text-align: right; user-select: none; }
 .wb-controls .wb-search input { width: min(320px, 100%); }
-@media (max-width: 720px) { .wb-library { grid-template-columns: 1fr; } .wb-controls .wb-search input { width: 100%; } }
+@media (max-width: 720px) { .wb-library { grid-template-columns: minmax(0, 1fr); } .wb-controls .wb-search input { width: 100%; } }
 /* Table cells wrap between words, not inside them (overflow-wrap: anywhere shrank columns to one letter on phones). */
 .wb-table th, .wb-table td { overflow-wrap: break-word; }
 .wb-table thead th { white-space: nowrap; }
@@ -358,8 +358,8 @@
 .wb-figures .wb-failed svg { width: .75em; height: .75em; }
 /* Number converter: while one field is invalid the others keep the last valid number, shown muted. */
 .wb-field[data-stale="true"] input { color: var(--wb-muted); font-style: italic; }
-.wb-empty-actions { display: grid; gap: 4px; justify-items: start; }
-.wb-empty-actions .wb-note { margin: 4px 8px 0; }
+.wb-empty-actions { display: grid; gap: 4px; justify-items: start; min-width: 0; }
+.wb-empty-actions .wb-note { margin: 4px 8px 0; max-width: 100%; overflow-wrap: anywhere; }
 /* Regex on phones: the match count and highlighted text come before the test-text editor, so a 375×812
    screen shows the result without scrolling. The result pane has no controls, so tab order is unchanged. */
 /* The preview above the editor is capped (and scrolls inside), so pasting a long log never pushes the test-text

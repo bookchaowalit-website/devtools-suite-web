@@ -177,3 +177,12 @@ describe("/regex on phones", () => {
     expect(phone).toMatch(/\.wb-panes-result-first \.wb-highlight \{[^}]*max-height: min\(40vh, 320px\);[^}]*overflow-y: auto;/);
   });
 });
+
+// A pasted hash with no spaces must wrap in the Snippets empty state, not widen the column (Codex review, 2026-11-18).
+describe("/snippets empty state with a long query", () => {
+  it("wraps the query and keeps the phone column from growing past the screen", () => {
+    const css = readFileSync(new URL("../app/workbench.css", import.meta.url), "utf8");
+    expect(css).toMatch(/\.wb-empty-actions \.wb-note \{[^}]*overflow-wrap: anywhere/);
+    expect(css).toMatch(/@media \(max-width: 720px\) \{ \.wb-library \{ grid-template-columns: minmax\(0, 1fr\); \}/);
+  });
+});
