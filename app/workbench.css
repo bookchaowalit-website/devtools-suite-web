@@ -501,3 +501,5 @@
 @media (max-width: 359px) { .wb-fields-compact .wb-field code { font-size: 14px; } .wb-fields-compact .wb-field { grid-template-columns: 40px minmax(0, 1fr) auto; } }
 /* "Go to line" reads as a link inside the error text but keeps a 44px tap target. */
 .wb-error .wb-link { display: inline-flex; align-items: center; min-height: 44px; margin: -12px 0; padding: 0 4px; }
+.wb-hint-list { padding-left: 20px; list-style: disc; }
+.wb-hint-list li + li { margin-top: 4px; }
