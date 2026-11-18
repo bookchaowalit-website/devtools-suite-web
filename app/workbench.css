@@ -362,4 +362,9 @@
 .wb-empty-actions .wb-note { margin: 4px 8px 0; }
 /* Regex on phones: the match count and highlighted text come before the test-text editor, so a 375×812
    screen shows the result without scrolling. The result pane has no controls, so tab order is unchanged. */
-@media (max-width: 720px) { .wb-panes-result-first > :last-child { order: -1; } }
+/* The preview above the editor is capped (and scrolls inside), so pasting a long log never pushes the test-text
+   editor screens down: the editor always starts within the first screen below it. */
+@media (max-width: 720px) {
+  .wb-panes-result-first > :last-child { order: -1; }
+  .wb-panes-result-first .wb-highlight { flex: none; max-height: min(40vh, 320px); overflow-y: auto; overscroll-behavior: contain; }
+}

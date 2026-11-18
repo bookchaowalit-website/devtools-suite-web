@@ -4,7 +4,7 @@ import { describe, expect, it } from "vitest";
 import { ToolCatalog } from "@/components/tool-catalog";
 import { filterTools, TOOLS, toolPath } from "@/lib/tools";
 
-const ENTRIES = TOOLS.map(({ slug, name, description }) => ({ slug, name, description, path: toolPath({ slug }) }));
+const ENTRIES = TOOLS.map(({ slug, name, description, keywords }) => ({ slug, name, description, keywords, path: toolPath({ slug }) }));
 
 describe("filterTools", () => {
   it("matches name and description, case-insensitive, every word", () => {
@@ -14,6 +14,27 @@ describe("filterTools", () => {
     expect(filterTools(TOOLS, "beam").map((tool) => tool.slug)).toEqual(["engineering-calc"]);
     expect(filterTools(TOOLS, "json yaml").map((tool) => tool.slug)).toEqual(["jsonconverter"]);
     expect(filterTools(TOOLS, "nothing-like-this")).toEqual([]);
+  });
+
+  it("finds the tool for whole task phrases, joining words and abbreviations included", () => {
+    const find = (query: string) => filterTools(TOOLS, query).map((tool) => tool.slug);
+    expect(find("JSON to YAML")).toEqual(["jsonconverter"]);
+    expect(find("yaml to json")).toEqual(["jsonconverter"]);
+    expect(find("hex to decimal")).toEqual(["number-converter"]);
+    expect(find("binary to hex")).toEqual(["number-converter"]);
+    expect(find("text to base64")).toEqual(["base64"]);
+    expect(find("sha256 checksum")).toEqual(["hashgen"]);
+    expect(find("crontab")).toEqual(["cron"]);
+    expect(find("pretty print json")).toEqual(["jsonconverter"]);
+    expect(find("compare two texts")).toEqual(["diffchecker"]);
+    // A query of joining words only is still matched literally, not treated as "show everything".
+    expect(find("to").length).toBeLessThan(TOOLS.length);
+  });
+
+  it("the catalog filters on keywords too", () => {
+    const html = renderToString(<ToolCatalog tools={ENTRIES} initialQuery="hex to decimal" />);
+    expect(html).toContain('href="/number-converter"');
+    expect(html).toContain(">1 of 17 tools</p>");
   });
 
   it("every description says plainly what the tool does", () => {

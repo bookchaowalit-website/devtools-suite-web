@@ -2,7 +2,7 @@ import { ToolCatalog } from "@/components/tool-catalog";
 import { SUITE_NAME } from "@/lib/site";
 import { TOOLS, toolPath } from "@/lib/tools";
 
-const ENTRIES = TOOLS.map(({ slug, name, description }) => ({ slug, name, description, path: toolPath({ slug }) }));
+const ENTRIES = TOOLS.map(({ slug, name, description, keywords }) => ({ slug, name, description, keywords, path: toolPath({ slug }) }));
 
 export default function Catalog() {
   return (

@@ -59,13 +59,24 @@ export function describe(expr: string) {
   if (!check.ok) return check.message;
   const [minute, hour, dom, month, dow] = expr.trim().split(/\s+/);
   const plain = (field: string) => NUMBER.test(field);
+  // "every N minutes" only when the whole field is one */N step; a list such as */15,7 is spelled out instead.
   const time = minute === "*" && hour === "*" ? "every minute"
-    : minute.startsWith("*/") && hour === "*" ? `every ${minute.slice(2)} minutes`
+    : /^\*\/\d+$/.test(minute) && hour === "*" ? `every ${minute.slice(2)} minutes`
     : plain(minute) && hour === "*" ? `at minute ${minute} of every hour`
+    : hour === "*" ? `at ${minuteList(minute)} of every hour`
     : plain(minute) && plain(hour) ? `at ${hour.padStart(2, "0")}:${minute.padStart(2, "0")}`
     : `minute ${minute} of hour ${hour}`;
   const dates = [dom !== "*" ? `day ${dom}` : "every day", month !== "*" ? `month ${month}` : "all months", dow !== "*" ? `weekday ${dow}` : "all weekdays"];
   return `${time}; ${dates.join(" · ")}`;
+}
+
+/** The minutes a minute field really runs on, from the same matcher nextRuns uses, e.g. "minutes 0, 7, 15, 30 and 45". */
+function minuteList(field: string): string {
+  const values: number[] = [];
+  for (let value = 0; value <= 59; value += 1) if (fieldMatches(field, value, 0, 59)) values.push(value);
+  if (values.length === 1) return `minute ${values[0]}`;
+  if (values.length <= 12) return `minutes ${values.slice(0, -1).join(", ")} and ${values[values.length - 1]}`;
+  return `${values.length} minutes (${values.slice(0, 5).join(", ")} … ${values[values.length - 1]})`;
 }
 
 /** Expands a field once into a lookup table indexed by value, so the minute loop does no parsing. */

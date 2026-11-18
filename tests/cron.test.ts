@@ -63,6 +63,17 @@ describe("describe and nextRuns", () => {
     expect(describeCron("0 99 * * *")).toBe("Hour takes 0–23; 99 is out of range.");
   });
 
+  it("spells out minute lists that mix steps and single values, matching the real run times", () => {
+    expect(describeCron("*/15,7 * * * *")).toBe("at minutes 0, 7, 15, 30 and 45 of every hour; every day · all months · all weekdays");
+    // nextRuns agrees: 08:07, 08:15, 08:30, 08:45, 09:00 after 08:00 (minutes 0, 7, 15, 30, 45).
+    expect(nextRuns("*/15,7 * * * *", 5).map((run) => run.match(/:(\d\d)/)?.[1])).toEqual(["07", "15", "30", "45", "00"]);
+    expect(describeCron("0,30 * * * *")).toBe("at minutes 0 and 30 of every hour; every day · all months · all weekdays");
+    expect(describeCron("5-7 * * * *")).toBe("at minutes 5, 6 and 7 of every hour; every day · all months · all weekdays");
+    expect(describeCron("10-50/40 * * * *")).toBe("at minutes 10 and 50 of every hour; every day · all months · all weekdays");
+    expect(describeCron("59/5 * * * *")).toBe("at minute 59 of every hour; every day · all months · all weekdays");
+    expect(describeCron("*/2,1 * * * *")).toBe("at 31 minutes (0, 1, 2, 4, 6 … 58) of every hour; every day · all months · all weekdays");
+  });
+
   it("finds no runs for an invalid expression and treats weekday 7 as Sunday", () => {
     expect(nextRuns("0 99 * * *")).toEqual([]);
     expect(nextRuns("0 9 * *")).toEqual([]);

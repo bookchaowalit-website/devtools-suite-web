@@ -1,3 +1,4 @@
+import { readFileSync } from "node:fs";
 import { renderToString } from "react-dom/server";
 import { describe, expect, it } from "vitest";
 import HashTool from "@/app/(tools)/hashgen/page";
@@ -166,5 +167,13 @@ describe("the last five tools on the Workbench shell", () => {
     expect(html).toContain("React Hook");
     expect(html).toContain('aria-current="true"');
     expect(html).not.toMatch(/specimen/i);
+  });
+});
+
+describe("/regex on phones", () => {
+  it("caps the preview shown above the editor, so a long paste cannot push the editor screens down", () => {
+    const css = readFileSync(new URL("../app/workbench.css", import.meta.url), "utf8");
+    const phone = css.slice(css.indexOf(".wb-panes-result-first > :last-child { order: -1; }"));
+    expect(phone).toMatch(/\.wb-panes-result-first \.wb-highlight \{[^}]*max-height: min\(40vh, 320px\);[^}]*overflow-y: auto;/);
   });
 });

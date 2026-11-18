@@ -4,7 +4,7 @@ import Link from "next/link";
 import { useState } from "react";
 import { filterTools } from "@/lib/tools";
 
-export type CatalogEntry = { slug: string; name: string; description: string; path: string };
+export type CatalogEntry = { slug: string; name: string; description: string; keywords?: string; path: string };
 
 /** The home page's tool grid with a search field. The full list renders on the server; the filter runs in the browser. */
 export function ToolCatalog({ tools, initialQuery = "" }: { tools: readonly CatalogEntry[]; initialQuery?: string }) {
