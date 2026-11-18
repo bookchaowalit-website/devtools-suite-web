@@ -131,7 +131,7 @@ export default function LatencyTool() {
       <UndoToast state={undo} />
 
       <ul className="wb-hint wb-hint-list">
-        <li>Time runs from the request to the response headers (DNS, connection and server time); the body is not downloaded.</li>
+        <li>Time runs from the request to the response headers, so it covers DNS, connection and server time; the body is not downloaded.</li>
         <li>Cross-site requests cannot show their status, so they are marked “response not readable”.</li>
         <li>Failed requests are left out of the average. Each request times out after {TIMEOUT_MS / 1000} s.</li>
         <li>History is kept only until you reload.</li>
