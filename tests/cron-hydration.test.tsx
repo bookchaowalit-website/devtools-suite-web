@@ -8,7 +8,9 @@ describe("cron next runs", () => {
   it("server render shows a placeholder instead of clock-dependent times", () => {
     const html = renderToString(<CronPage />);
     expect(html).not.toMatch(/<time>/);
-    expect(html).toContain("Calculating in your local time");
+    expect(html).toContain("Calculating run times");
+    expect(html).toContain("At 09:00, Monday to Friday");
+    expect(html).toMatch(/aria-label="Time zone"/);
     expect(html).toContain('class="wb"');
   });
 });
