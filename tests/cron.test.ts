@@ -23,6 +23,12 @@ describe("validateCron", () => {
     expect(checkField("*/0", 0)).toBe("Minute step “/0” must be a whole number of 1 or more.");
     expect(checkField("*/x", 0)).toMatch(/step/);
     expect(checkField("1/2/3", 0)).toMatch(/more than one step/);
+    // crontab takes a step only after * or a range (Codex review, 2026-11-19).
+    expect(checkField("5/20", 0)).toBe("Minute step “5/20” needs * or a range before the /; write 5-59/20 or */20.");
+    expect(checkField("1,3/2", 1)).toBe("Hour step “3/2” needs * or a range before the /; write 3-23/2 or */2.");
+    expect(checkField("*/20", 0)).toBeNull();
+    expect(checkField("5-59/20", 0)).toBeNull();
+    expect(validateCron("0 0 1/2 * *")).toEqual({ ok: false, field: 2, message: "Day of month step “1/2” needs * or a range before the /; write 1-31/2 or */2." });
     expect(checkField("5-1", 1)).toMatch(/runs backwards/);
     expect(checkField("1,,2", 1)).toMatch(/empty list item/);
     expect(checkField("MON", 4)).toMatch(/is not a number, range/);
@@ -72,7 +78,7 @@ describe("describe and nextRuns", () => {
     expect(describeCron("0,30 * * * *")).toBe("at minutes 0 and 30 of every hour; every day · all months · all weekdays");
     expect(describeCron("5-7 * * * *")).toBe("at minutes 5, 6 and 7 of every hour; every day · all months · all weekdays");
     expect(describeCron("10-50/40 * * * *")).toBe("at minutes 10 and 50 of every hour; every day · all months · all weekdays");
-    expect(describeCron("59/5 * * * *")).toBe("at minute 59 of every hour; every day · all months · all weekdays");
+    expect(describeCron("59-59/5 * * * *")).toBe("at minute 59 of every hour; every day · all months · all weekdays");
     expect(describeCron("*/2,1 * * * *")).toBe("at 31 minutes (0, 1, 2, 4, 6 … 58) of every hour; every day · all months · all weekdays");
   });
 

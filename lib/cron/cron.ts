@@ -27,6 +27,8 @@ export function checkField(text: string, index: number): string | null {
     const ends = range.split("-");
     if (ends.length > 2 || ends.some((end) => !NUMBER.test(end))) return `${label} “${part}” is not a number, range (1-5), list (1,15) or step (*/10).`;
     for (const end of ends) if (Number(end) < min || Number(end) > max) return `${allowed}; ${end} is out of range.`;
+    // Standard crontab allows a step only after * or a range: 5/20 is refused by crontab, so refuse it here too.
+    if (step !== undefined && ends.length === 1) return `${label} step “${part}” needs * or a range before the /; write ${range}-${max}/${step} or */${step}.`;
     if (ends.length === 2 && Number(ends[0]) > Number(ends[1])) return `${label} range “${range}” runs backwards; write the smaller number first.`;
   }
   return null;
