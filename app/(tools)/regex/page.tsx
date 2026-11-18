@@ -57,9 +57,10 @@ export default function RegexTool() {
             <h2 id="regex-preview">Matches highlighted</h2>
             <span className="wb-muted" aria-live="polite">{result.matches.length}{result.matches.length >= MAX_MATCHES ? "+" : ""} {result.matches.length === 1 ? "match" : "matches"}</span>
           </div>
-          <p className="wb-highlight">
+          {/* Focusable so keyboard users can scroll it when it is capped on phones (Safari does not focus scroll boxes). */}
+          <div className="wb-highlight" role="region" aria-label="Highlighted matches" tabIndex={0}>
             {text ? parts.map((part, index) => (part.match ? <mark key={index}>{part.text}</mark> : <span key={index}>{part.text}</span>)) : <span className="wb-muted">Matches appear here.</span>}
-          </p>
+          </div>
         </section>
       </div>
 

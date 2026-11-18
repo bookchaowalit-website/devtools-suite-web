@@ -313,6 +313,7 @@
 .wb-regex > span { font-family: var(--wb-mono); font-size: clamp(20px, 3vw, 26px); color: var(--wb-muted); }
 .wb-chips code { font-family: var(--wb-mono); font-weight: 700; }
 .wb-highlight { flex: 1; min-height: 220px; margin: 0; padding: 16px; font-family: var(--wb-mono); font-size: 15px; line-height: 1.8; white-space: pre-wrap; overflow-wrap: anywhere; }
+.wb-highlight:focus-visible { outline: 3px solid var(--wb-focus); outline-offset: -3px; }
 .wb-highlight mark { padding: 1px 0; border-radius: 4px; background: var(--wb-mark); color: inherit; box-shadow: 0 0 0 1px var(--wb-mark-line); }
 :root { --wb-mark: #fff1b8; --wb-mark-line: #e0b400; }
 @media (prefers-color-scheme: dark) { :root { --wb-mark: #4a3b00; --wb-mark-line: #a88400; } }

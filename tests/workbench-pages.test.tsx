@@ -186,3 +186,13 @@ describe("/snippets empty state with a long query", () => {
     expect(css).toMatch(/@media \(max-width: 720px\) \{ \.wb-library \{ grid-template-columns: minmax\(0, 1fr\); \}/);
   });
 });
+
+// The capped preview scrolls, so keyboard users must be able to focus it (Codex review, 2026-11-19).
+describe("/regex preview for keyboard users", () => {
+  it("is a labelled, focusable region with a visible focus ring", () => {
+    const html = renderToString(<RegexTool />);
+    expect(html).toMatch(/<div class="wb-highlight" role="region" aria-label="Highlighted matches" tabindex="0">/);
+    const css = readFileSync(new URL("../app/workbench.css", import.meta.url), "utf8");
+    expect(css).toMatch(/\.wb-highlight:focus-visible \{ outline: 3px solid var\(--wb-focus\)/);
+  });
+});
