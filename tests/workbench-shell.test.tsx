@@ -1,7 +1,7 @@
 import { readFileSync } from "node:fs";
 import { renderToString } from "react-dom/server";
 import { describe, expect, it } from "vitest";
-import { CopyBlocked, Segmented, ToolIntro, UndoToast, type UndoState } from "@/components/workbench";
+import { CopyBlocked, Segmented, ToolIntro, UndoToast, Workbench, type UndoState } from "@/components/workbench";
 
 const css = readFileSync(new URL("../app/workbench.css", import.meta.url), "utf8");
 const luminance = (hex: string) => {
@@ -11,6 +11,11 @@ const luminance = (hex: string) => {
 const contrast = (a: string, b: string) => { const [hi, lo] = [luminance(a), luminance(b)].sort((x, y) => y - x); return (hi + 0.05) / (lo + 0.05); };
 
 describe("shared Workbench pieces (2026-11-19 polish)", () => {
+  it("uses the main landmark as the skip-link target", () => {
+    const html = renderToString(<Workbench><p>Tool</p></Workbench>);
+    expect(html).toMatch(/^<main id="main" tabindex="-1" class="wb">/);
+  });
+
   it("shows a visible copy-blocked note only when copying failed", () => {
     expect(renderToString(<CopyBlocked show={false} />)).toBe("");
     const html = renderToString(<CopyBlocked show what="the hash" />);

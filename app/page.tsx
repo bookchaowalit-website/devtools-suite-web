@@ -5,12 +5,12 @@ const ENTRIES = TOOLS.map(({ slug, name, description, keywords, group }) => ({ s
 
 export default function Catalog() {
   return (
-    <div className="catalog">
+    <main id="main" tabIndex={-1} className="catalog">
       <h1>Developer tools that run in your browser</h1>
       <p className="catalog-lede">
         {TOOLS.length} developer tools in one place, grouped by job; nothing you type is uploaded.
       </p>
       <ToolCatalog tools={ENTRIES} />
-    </div>
+    </main>
   );
 }

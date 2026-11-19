@@ -2,6 +2,7 @@ import { readFileSync } from "node:fs";
 import { renderToString } from "react-dom/server";
 import { describe, expect, it } from "vitest";
 import { ToolCatalog } from "@/components/tool-catalog";
+import Catalog from "@/app/page";
 import { filterTools, TOOL_GROUPS, TOOLS, toolPath } from "@/lib/tools";
 
 const ENTRIES = TOOLS.map(({ slug, name, description, keywords, group }) => ({ slug, name, description, keywords, group, path: toolPath({ slug }) }));
@@ -85,6 +86,10 @@ describe("suite header on phones", () => {
 });
 
 describe("home page grouping", () => {
+  it("uses a focusable main landmark for the skip link", () => {
+    expect(renderToString(<Catalog />)).toMatch(/^<main id="main" tabindex="-1" class="catalog">/);
+  });
+
   it("lists the 17 cards under job headings, every tool in exactly one known group", () => {
     const html = renderToString(<ToolCatalog tools={ENTRIES} />);
     for (const group of TOOL_GROUPS) expect(html).toContain(`id="group-${group.id}"`);
