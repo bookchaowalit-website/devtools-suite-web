@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { AlertIcon, CheckIcon, CopyBlocked, CopyIcon, Segmented, ToolIntro, UndoToast, useCopy, useUndo, Workbench } from "@/components/workbench";
-import { cssLightReason, isInstant, MODES, SAMPLES, minify, minifyInstant, type Mode } from "@/lib/minifier/minify";
+import { isInstant, MODES, SAMPLES, minify, minifyInstant, type Mode } from "@/lib/minifier/minify";
 
 const LABEL: Record<Mode, string> = { json: "JSON", css: "CSS", html: "HTML", js: "JavaScript" };
 const OPTIONS = MODES.map((value) => ({ value, label: value === "js" ? "JS" : LABEL[value] }));
@@ -11,11 +11,11 @@ const bytes = (text: string) => new TextEncoder().encode(text).length;
 type Result = { output: string; error: string };
 const failure = (cause: unknown): Result => ({ output: "", error: cause instanceof Error ? cause.message : "This input could not be minified." });
 
-/** JSON and HTML minify during render (also on the server); JavaScript and CSS go through terser / csso in an effect. */
+/** JSON, CSS and HTML minify during render (also on the server); JavaScript goes through terser in an effect. */
 function runInstant(mode: Mode, input: string): Result | null {
   if (!input.trim()) return { output: "", error: "" };
   if (!isInstant(mode)) return null;
-  try { return { output: minifyInstant(mode as "json" | "html", input), error: "" }; } catch (cause) { return failure(cause); }
+  try { return { output: minifyInstant(mode as "json" | "css" | "html", input), error: "" }; } catch (cause) { return failure(cause); }
 }
 
 export default function MinifierTool() {
@@ -84,7 +84,7 @@ export default function MinifierTool() {
           </div>
           <textarea id="min-output" value={output} readOnly placeholder={pending ? "Minifying…" : error ? "Fix the input to see the result" : "The minified code appears here as you type"} aria-describedby="min-output-meta" spellCheck={false} />
           <CopyBlocked show={blocked} />
-          {mode === "css" && output && cssLightReason(input) ? <p className="wb-note wb-pane-note">{cssLightReason(input)}</p> : null}
+          {mode === "css" ? <p className="wb-note wb-pane-note">Removes comments and extra whitespace; values are never rewritten.</p> : null}
           <p id="min-output-meta" className="wb-pane-meta wb-stats">
             <span>{after.toLocaleString("en")} bytes</span>
             {output ? <span><strong>{saved}% smaller</strong></span> : null}
@@ -94,7 +94,7 @@ export default function MinifierTool() {
       <p className="wb-sr" role="status" aria-live="polite">{announcement}</p>
       <UndoToast state={undo} />
 
-      <p className="wb-hint">JavaScript goes through terser and CSS through csso, the minifiers real build tools use, with renaming and restructuring off so the result still reads like your code. HTML is a simple comment and whitespace stripper.</p>
+      <p className="wb-hint">JavaScript goes through terser, the minifier real build tools use, with renaming and compression off so the result still reads like your code. CSS and HTML only lose comments and extra whitespace.</p>
     </Workbench>
   );
 }

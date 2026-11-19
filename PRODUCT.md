@@ -30,7 +30,7 @@ A developer who needs a quick, private, in-browser utility, and a portfolio visi
 | `/hashgen` | SHA-1, SHA-256, SHA-384 or SHA-512 of the entered text via Web Crypto, recomputed as you type; copy the digest. On the Workbench shell. | No MD5, bcrypt, file hashing or batch comparison. |
 | `/jsonconverter` | Pretty-print or minify JSON, and convert JSON ↔ YAML (js-yaml); errors are shown; copy output. Result updates as you type. On the Workbench shell. | No tree view, syntax highlighting, CSV or XML. |
 | `/markdown-editor` | Split-pane editor with a live preview from a small built-in renderer (escaped HTML, safe links only); reset sample; copy source. On the Workbench shell. | No syntax highlighting, themes, or export to HTML/PDF/MDX. |
-| `/minifier` | Shrink JS with terser and CSS with csso (both loaded only on this page, renaming and restructuring off), HTML with a comment and whitespace stripper, and JSON through `JSON.parse`; parse errors give line and column; size savings; copy. Logic in `lib/minifier/minify.ts`. On the Workbench shell. | No source maps or mangling. |
+| `/minifier` | Shrink JS with terser (loaded only on this page, renaming and compression off); CSS and HTML lose comments and extra whitespace only, so no CSS value is ever rewritten; JSON through `JSON.parse`; JS parse errors give line and column; size savings; copy. Logic in `lib/minifier/minify.ts`. On the Workbench shell. | No source maps or mangling. |
 | `/number-converter` | Four synced inputs (binary, octal, decimal, hexadecimal) using BigInt, so large integers convert exactly; invalid input is flagged. On the Workbench shell. | No bit visualisation or signed/unsigned representations. |
 | `/regex` | Live JavaScript RegExp tester with flag toggles, highlighted matches and capture groups, on the main thread. Default pattern fixed (it was "\b\w+\b" in a plain string, so it matched nothing); logic in `lib/regex/run.ts`. On the Workbench shell. | No pattern library or Web Worker execution. |
 | `/url-encoder` | `encodeURIComponent` / `decodeURIComponent` / `encodeURI` / `decodeURI` (chosen as Encode/Decode × Query value/Full URL), live result, swap-and-reverse, and a `URLSearchParams` query inspector. On the Workbench shell. | No query builder, batch mode, full URL parsing or double-encoding handling. |
@@ -71,20 +71,22 @@ instead of starting another devtools round.
 
 - Code Minifier, JavaScript: terser with renaming and compression off; code that is not a valid script is retried as
   a module (import/export, top-level await), and if both fail the script parse error is shown.
-- Code Minifier, CSS: csso with restructuring off. CSS with `@import`, `@layer`, a math function (calc, calc-size,
-  min, max, clamp, hypot, …) or any backslash escape gets a light minify with a note, because csso drops an `@import`
-  after `@layer` and strips units from zero there; the light minify never touches strings, url() or their contents.
-  CSS that csso would shorten by dropping blocks (nested rules) is refused.
-- Code Minifier, CSS parse errors: csso is tolerant, so positions are shown only when it reports one.
+- Code Minifier, CSS: comments and extra whitespace only (csso was removed on 2026-11-19 because it rewrote values
+  such as flex-basis 0% and @property initial-value). Strings, url() and backslash escapes are copied exactly, so
+  results are smaller than the input but not as small as a full CSS minifier; there are no parse errors to show.
 - Code Minifier, HTML: a comment and whitespace stripper, not an HTML parser.
 - Markdown Editor: a small renderer, not CommonMark; tables preview at most 50 columns and 5,000 cells; nothing is saved.
 - Regex Tester: Replace stops at 1,000 matches, 200,000 characters or a fixed amount of template work, and says so.
+- Regex Tester, match table: shows the first 200 matches with one column per capture group, with no cap on the total
+  number of cells, so a pattern with very many groups builds a large table.
 - Diff Checker: lines split on "\n" only, so CRLF text compares with "\r" kept at line ends; one hunk for the whole
   text; very long texts get an approximate diff with a notice.
 - Diff Checker, CRLF: browsers turn CRLF into LF when text is pasted into a box, so a patch for a CRLF file has LF
   line ends and may need `git apply --ignore-whitespace`.
 - Diff Checker, work: the patch re-runs the line comparison instead of reusing the preview's result.
-- Diff Checker, patch paths: spaces are kept with git's tab-terminated header; "..", a leading "/" and control
+- Diff Checker, paths with spaces: kept, with git's tab-terminated header line; tools other than git may need
+  the name quoted by hand.
+- Diff Checker, patch paths: "..", a leading "/" and control
   characters are removed; renaming the file field updates the patch, the comparison itself is not re-run.
 - Hash Generator: files up to 512 MB; one file read and one hash job at a time (newest request wins), and a hash
   already running finishes before the next starts; Undo after Clear does not bring back a file still being read.
