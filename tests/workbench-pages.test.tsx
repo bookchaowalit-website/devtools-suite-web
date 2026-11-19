@@ -236,11 +236,11 @@ describe("focus order and storage scope", () => {
     expect(css).not.toMatch(/(^|[;{\s])order:/m);
   });
 
-  it("/markdown-editor keeps nothing in the browser until you turn it on", () => {
+  it("/markdown-editor stores nothing: no storage calls and no keep-draft switch", () => {
     const html = renderToString(<MarkdownEditorTool />);
-    expect(html).toMatch(/<input type="checkbox" role="switch"\/?>|<input type="checkbox" role="switch" value="on"/);
-    expect(html).toContain("Keep draft in this browser");
-    expect(html).toContain("Off: the text is gone when you close the tab.");
+    expect(html).not.toContain("Keep draft");
+    const page = readFileSync(new URL("../app/(tools)/markdown-editor/page.tsx", import.meta.url), "utf8");
+    expect(page).not.toMatch(/localStorage|sessionStorage/);
   });
 });
 

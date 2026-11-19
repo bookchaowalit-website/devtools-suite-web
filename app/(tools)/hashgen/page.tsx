@@ -58,7 +58,25 @@ export default function HashTool() {
   const { copied, blocked, copy } = useCopy(digest, (ok) => setAnnouncement(ok ? "Hash copied to the clipboard." : "Copy was blocked. Select the hash and copy it by hand."));
   const textBytes = new TextEncoder().encode(input).length;
 
-  const pick = async (picked: File | undefined) => {
+  // One file is read at a time: a file chosen while another is being read waits, and only the newest waiting
+  // choice is read next, so quick re-picks of large files never pile up reads in memory.
+  const reading = useRef(false);
+  const waiting = useRef<{ id: number; file: File } | null>(null);
+  const read = async (id: number, picked: File) => {
+    reading.current = true;
+    try {
+      const data = await picked.arrayBuffer();
+      if (selection.current === id) setFile({ id, name: picked.name, size: picked.size, data });
+    } catch {
+      if (selection.current === id) { setFile(null); setFileError(`${picked.name} could not be read. It may have been moved or changed; choose it again.`); }
+    } finally {
+      reading.current = false;
+      const next = waiting.current;
+      waiting.current = null;
+      if (next && selection.current === next.id) void read(next.id, next.file);
+    }
+  };
+  const pick = (picked: File | undefined) => {
     // Reset the input so choosing the same file again (after Clear, say) still fires a change.
     if (fileInput.current) fileInput.current.value = "";
     if (!picked) return;
@@ -66,15 +84,10 @@ export default function HashTool() {
     const id = ++selection.current;
     if (picked.size > MAX_FILE_BYTES) { setFile(null); setFileError(`${picked.name} is ${formatSize(picked.size)}; files up to 512 MB can be hashed in the browser.`); return; }
     setFileError("");
-    // The new selection replaces the old one at once (no stale hash while it is read); a slower, older read is ignored.
+    // The new selection replaces the old one at once (no stale hash while it is read); an older read is ignored.
     setFile({ id, name: picked.name, size: picked.size, data: null });
     setAnnouncement(`Hashing ${picked.name}.`);
-    try {
-      const data = await picked.arrayBuffer();
-      if (selection.current === id) setFile({ id, name: picked.name, size: picked.size, data });
-    } catch {
-      if (selection.current === id) { setFile(null); setFileError(`${picked.name} could not be read. It may have been moved or changed; choose it again.`); }
-    }
+    if (reading.current) waiting.current = { id, file: picked }; else void read(id, picked);
   };
   // Clear offers Undo, which brings the file back only if no other file was chosen since.
   const clearFile = () => {
@@ -83,7 +96,7 @@ export default function HashTool() {
     setFile(null); setFileError(""); if (fileInput.current) fileInput.current.value = "";
     if (cleared?.data) undo.offer("File cleared.", () => { if (selection.current === id) { selection.current += 1; setFile({ ...cleared, id: selection.current }); } });
   };
-  const drop = (event: DragEvent<HTMLElement>) => { event.preventDefault(); setOver(false); void pick(event.dataTransfer.files[0]); };
+  const drop = (event: DragEvent<HTMLElement>) => { event.preventDefault(); setOver(false); pick(event.dataTransfer.files[0]); };
   const emptyText = source === "text" ? "Type or paste text to get its hash." : "Choose or drop a file to get its hash.";
 
   return (
@@ -127,7 +140,7 @@ export default function HashTool() {
             </div>
             <label className="wb-drop" data-over={over ? "true" : undefined} onDragOver={(event) => { event.preventDefault(); setOver(true); }} onDragLeave={() => setOver(false)} onDrop={drop}>
               {file ? <><strong>{file.name}</strong><span>{formatSize(file.size)}{file.data ? "" : " · reading…"} · choose another or drop it here</span></> : <><strong>Choose a file</strong><span>or drop it here. It stays on this device.</span></>}
-              <input ref={fileInput} className="wb-sr" type="file" onChange={(event) => void pick(event.target.files?.[0])} />
+              <input ref={fileInput} className="wb-sr" type="file" onChange={(event) => pick(event.target.files?.[0])} />
             </label>
             {fileError ? <p className="wb-error" role="alert"><AlertIcon />{fileError}</p> : <p className="wb-pane-meta">Up to 512 MB.</p>}
           </section>

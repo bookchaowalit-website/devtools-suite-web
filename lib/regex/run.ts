@@ -60,13 +60,16 @@ export function groupNames(pattern: string): (string | undefined)[] {
     if (pattern[i + 1] !== "?") { names.push(undefined); continue; }
     // (?<name>…) captures under any name JavaScript accepts (Unicode or \u escapes); (?<= and (?<! are lookbehinds.
     const named = /^\?<(?![=!])([^>]+)>/.exec(pattern.slice(i + 1));
-    if (named) names.push(named[1]);
+    // Shown decoded: (?<\u{e9}>…) is the group "é".
+    if (named) names.push(named[1].replace(/\\u\{([0-9a-fA-F]+)\}|\\u([0-9a-fA-F]{4})/g, (_, braced: string, four: string) => String.fromCodePoint(parseInt(braced ?? four, 16))));
   }
   return names;
 }
 
 /** Longest replace result built; the rest of the text is left as it was and the result says it stopped. */
 export const MAX_REPLACE_OUTPUT = 200_000;
+/** Most template pieces expanded per replace (template pieces × matches), so a long template on many matches stays quick. */
+export const MAX_REPLACE_WORK = 1_000_000;
 
 /** One piece of a parsed replacement template. */
 export type TemplatePart = { literal: string } | { match: true } | { before: true } | { after: true } | { group: number } | { name: string };
@@ -149,17 +152,21 @@ export function replaceAll(pattern: string, flags: string, text: string, replace
   // Parsed once for every match; the group count and named groups come from the pattern itself.
   const shape = new RegExp(`${re.source}|`, re.flags.replace(/[gy]/g, "")).exec("");
   const parts = parseTemplate(replacement, shape ? shape.length - 1 : 0, Boolean(shape?.groups));
-  /** Appends one match's replacement within the output budget; false once the budget is used up. */
+  let work = 0;
+  /** Appends one match's replacement within the output and work budgets; false once either is used up. */
   const step = (match: RegExpExecArray): boolean => {
-    out += text.slice(cursor, match.index).slice(0, Math.max(0, MAX_REPLACE_OUTPUT - out.length));
-    if (out.length >= MAX_REPLACE_OUTPUT) return false;
+    const gap = text.slice(cursor, match.index);
+    if (out.length + gap.length > MAX_REPLACE_OUTPUT) { out += gap.slice(0, MAX_REPLACE_OUTPUT - out.length); return false; }
+    work += Math.max(1, parts.length);
+    if (work > MAX_REPLACE_WORK) return false;
+    out += gap;
     const piece = expandParts(parts, match[0], match.slice(1), match.index, text, match.groups, MAX_REPLACE_OUTPUT - out.length);
     out += piece.value;
     cursor = match.index + match[0].length;
     count += 1;
     return piece.complete;
   };
-  const stopped = () => ({ value: out.slice(0, MAX_REPLACE_OUTPUT), error: "", truncated: true });
+  const stopped = () => ({ value: (out + text.slice(cursor, cursor + Math.max(0, MAX_REPLACE_OUTPUT - out.length))).slice(0, MAX_REPLACE_OUTPUT), error: "", truncated: true });
   if (!re.global) {
     const match = re.exec(text);
     if (match && !step(match)) return stopped();

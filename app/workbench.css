@@ -489,7 +489,6 @@
 @media (max-width: 720px) {
   .wb-options-beam .wb-option > span:last-child { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
 }
-.wb-pane-switch { padding: 4px 16px 8px; border-top: 1px solid var(--wb-line); }
 /* Colour values stay on one line: on phones the Copy buttons show only their icon (each has an aria-label). */
 .wb-fields-compact .wb-field code { white-space: nowrap; }
 @media (max-width: 720px) {
@@ -503,3 +502,13 @@
 .wb-error .wb-link { display: inline-flex; align-items: center; min-height: 44px; margin: -12px 0; padding: 0 4px; }
 .wb-hint-list { padding-left: 20px; list-style: disc; }
 .wb-hint-list li + li { margin-top: 4px; }
+.wb-input-inline { margin-left: auto; min-width: min(240px, 100%); }
+@media (max-width: 720px) { .wb-input-inline { margin-left: 0; width: 100%; } }
+/* Snippets on phones: the list is one sideways-scrolling row, so the chosen snippet's code and Copy button sit right
+   below it instead of after the whole list. */
+@media (max-width: 720px) {
+  .wb-library-list { padding: 6px; }
+  .wb-library-list ul { display: flex; gap: 6px; overflow-x: auto; padding: 4px; scroll-snap-type: x proximity; }
+  .wb-library-list li { flex: none; scroll-snap-align: start; }
+  .wb-library-list button { width: auto; min-width: 140px; }
+}

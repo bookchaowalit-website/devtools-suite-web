@@ -69,7 +69,7 @@ export function renderMarkdown(source: string, { headingOffset = 0 }: { headingO
     } else if (/^&gt; /.test(line)) { closeList(); output.push(`<blockquote>${inline(line.replace(/^&gt; /, ""))}</blockquote>`); }
     else if (bullet) listItem(Math.floor(bullet[1].length / 2), "ul", 1, bullet[2]);
     else if (numbered) listItem(Math.floor(numbered[1].length / 2), "ol", Number(numbered[2]), numbered[3]);
-    else if (line.includes("|") && TABLE_RULE.test(lines[index + 1] ?? "")) {
+    else if (line.includes("|") && TABLE_RULE.test(lines[index + 1] ?? "") && cells(line).length === cells(lines[index + 1]).length) {
       closeList();
       const head = cells(line);
       const rows: string[][] = [];

@@ -2,7 +2,7 @@
 
 import { useDeferredValue, useMemo, useState } from "react";
 import { AlertIcon, CheckIcon, CopyBlocked, CopyIcon, SwapIcon, ToolIntro, UndoToast, useCopy, useUndo, Workbench } from "@/components/workbench";
-import { diffLines, unifiedDiff, wordDiffs, type Op, type WordPart } from "@/lib/diffchecker/diff";
+import { diffLines, patchPath, unifiedDiff, wordDiffs, type Op, type WordPart } from "@/lib/diffchecker/diff";
 
 /** A changed line with the words that differ from its partner line highlighted (when a word diff was computed). */
 function ChangedLine({ op, parts }: { op: Op; parts?: WordPart[] }) {
@@ -14,6 +14,7 @@ export default function DiffCheckerTool() {
   const [left, setLeft] = useState("Hello World\nThis is the first text.\nShared line");
   const [right, setRight] = useState("Hello World\nThis is the second text.\nShared line\nExtra");
   const [announcement, setAnnouncement] = useState("");
+  const [fileName, setFileName] = useState("file.txt");
   const undo = useUndo();
   // Live comparison: the diff follows both texts, deferred so typing in a long text stays responsive.
   const deferredLeft = useDeferredValue(left);
@@ -26,7 +27,7 @@ export default function DiffCheckerTool() {
   const added = ops.filter((op) => op.type === "add").length;
   const removed = ops.filter((op) => op.type === "del").length;
   const same = ops.length - added - removed;
-  const unified = useMemo(() => (added || removed ? unifiedDiff(deferredLeft, deferredRight) : ""), [deferredLeft, deferredRight, added, removed]);
+  const unified = useMemo(() => (added || removed ? unifiedDiff(deferredLeft, deferredRight, { file: fileName }) : ""), [deferredLeft, deferredRight, added, removed, fileName]);
   const { copied, blocked, copy } = useCopy(unified, (ok) => setAnnouncement(ok ? "Diff copied to the clipboard as a unified diff." : "Copy was blocked. Select the differences and copy them by hand."));
 
   const swap = () => { setLeft(right); setRight(left); undo.dismiss(); setAnnouncement("Swapped original and changed text."); };
@@ -56,7 +57,11 @@ export default function DiffCheckerTool() {
           <SwapIcon />Swap sides
         </button>
         <button type="button" className="wb-button-plain" onClick={clear} disabled={!left && !right}>Clear both</button>
+        <label className="wb-input wb-input-inline">File name in the patch
+          <input value={fileName} onChange={(event) => setFileName(event.target.value)} spellCheck={false} autoComplete="off" placeholder="file.txt" aria-describedby="diff-file-hint" />
+        </label>
       </div>
+      <p id="diff-file-hint" className="wb-note">Copy diff writes a/{patchPath(fileName)} and b/{patchPath(fileName)}, so <code>git apply</code> run in the folder that holds it finds the file.</p>
       <p className="wb-sr" role="status" aria-live="polite">{announcement}</p>
 
       <section className="wb-diff" aria-labelledby="diff-title">

@@ -124,3 +124,22 @@ test("a long template full of $< is parsed in linear time", async () => {
   assert.equal(parseTemplate(template, 1, true).length, 1);
   assert.ok(performance.now() - started < 500);
 });
+
+// Codex review, 2026-11-19 (final round).
+test("replace stops at the work cap and allows a result exactly at the size cap", async () => {
+  const { MAX_REPLACE_OUTPUT, MAX_REPLACE_WORK, replaceAll } = await import("@/lib/regex/run");
+  const template = "$1".repeat(5000);
+  const started = performance.now();
+  const heavy = replaceAll("(x)?a", "g", "a".repeat(1000), template);
+  assert.equal(heavy.truncated, true);
+  assert.ok(performance.now() - started < 1000);
+  assert.ok(5000 * 1000 > MAX_REPLACE_WORK);
+  const exact = replaceAll("a", "g", "a".repeat(500), "b".repeat(MAX_REPLACE_OUTPUT / 500));
+  assert.equal(exact.truncated, false);
+  assert.equal(exact.value.length, MAX_REPLACE_OUTPUT);
+});
+
+test("escaped group names are shown decoded", async () => {
+  const { groupNames } = await import("@/lib/regex/run");
+  assert.deepEqual(groupNames("(?<\\u{e9}>a)(?<\\u0062>b)"), ["é", "b"]);
+});

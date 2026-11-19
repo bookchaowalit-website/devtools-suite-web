@@ -1,4 +1,8 @@
-/** Simple client-side minifiers for snippets and demos; not a production compiler or security boundary. */
+/**
+ * Minifiers for the Code Minifier page. JavaScript uses terser and CSS uses csso, the same libraries real build tools
+ * use; both are loaded with dynamic import() so only this page downloads them. JSON is parsed and re-serialised;
+ * HTML is a simple comment and whitespace stripper.
+ */
 
 export type Mode = "json" | "css" | "html" | "js";
 export const MODES: readonly Mode[] = ["json", "css", "html", "js"];
@@ -10,133 +14,58 @@ export const SAMPLES: Record<Mode, string> = {
   js: `// A small function\nfunction greet(name) {\n  const message = "Hello, " + name;\n  return message;\n}`,
 };
 
-const LINE_END = /[\n\r\u2028\u2029]/;
-/** Words after which a "/" starts a regular expression literal, not a division. */
-const REGEX_AFTER_WORD = new Set(["return", "typeof", "case", "do", "else", "in", "of", "new", "delete", "void", "throw", "yield", "await", "instanceof"]);
-
-/** Index just past a quoted string that opens at `i`. */
-function skipString(input: string, i: number): number {
-  const quote = input[i];
-  let end = i + 1;
-  while (end < input.length && input[end] !== quote && !(quote !== "`" && LINE_END.test(input[end]))) end += input[end] === "\\" ? 2 : 1;
-  return Math.min(end + 1, input.length);
-}
-
-/** Index just past a template literal that opens at `i`, including ${…} expressions that hold strings or templates. */
-function skipTemplate(input: string, i: number): number {
-  let at = i + 1;
-  while (at < input.length) {
-    const char = input[at];
-    if (char === "\\") { at += 2; continue; }
-    if (char === "`") return at + 1;
-    if (char === "$" && input[at + 1] === "{") {
-      let depth = 1;
-      at += 2;
-      while (at < input.length && depth > 0) {
-        const inner = input[at];
-        if (inner === '"' || inner === "'") at = skipString(input, at);
-        else if (inner === "`") at = skipTemplate(input, at);
-        else { if (inner === "{") depth += 1; else if (inner === "}") depth -= 1; at += 1; }
-      }
-      continue;
-    }
-    at += 1;
+/** A minify failure with a plain sentence and, when the parser knows it, the 1-based line and column. */
+export class MinifyError extends Error {
+  constructor(message: string, readonly line: number | null = null, readonly column: number | null = null) {
+    super(line !== null ? `Line ${line}, column ${column ?? 1}: ${message}` : message);
+    this.name = "MinifyError";
   }
-  return input.length;
 }
 
-/** Index just past a regular expression literal that opens at `i` (character classes may hold "/"), or -1 if none. */
-function skipRegex(input: string, i: number): number {
-  let at = i + 1;
-  let inClass = false;
-  while (at < input.length && !LINE_END.test(input[at])) {
-    const char = input[at];
-    if (char === "\\") { at += 2; continue; }
-    if (inClass) { if (char === "]") inClass = false; }
-    else if (char === "[") inClass = true;
-    else if (char === "/") { at += 1; while (at < input.length && /[a-z]/i.test(input[at])) at += 1; return at; }
-    at += 1;
-  }
-  return -1;
-}
-
-/** Words after which "(…)" is a condition, so a "/" right after its ")" starts a regular expression. */
-const CONDITION_WORDS = new Set(["if", "while", "for", "with"]);
+const sentence = (text: string) => { const trimmed = text.trim(); return /[.!?]$/.test(trimmed) ? trimmed : `${trimmed}.`; };
 
 /**
- * Splits code into literals (kept byte for byte) and the code between them, with comments removed from the code.
- * Strings are literals in both languages; JavaScript also keeps template literals (nested ones included) and regular
- * expression literals. A block comment becomes a space in JavaScript but nothing in CSS, where ".a", a comment, ".b"
- * is the compound selector .a.b (a space would make it a descendant selector).
- *
- * One pass, linear in the input. Whether a "/" starts a regular expression or is a division is decided from the
- * previous significant token, as JavaScript parsers do: after a value (a name, number, string, regex, template, ")"
- * or "]") it divides; after an operator, "(", "," or a keyword such as return it starts a regex; after the ")" of
- * if / while / for / with it starts a regex too.
+ * JavaScript through terser with compress and mangle off: comments and whitespace go, names and statements stay as
+ * written, so the result reads like the input and behaves the same.
  */
-export function splitCode(input: string, { js = false }: { js?: boolean } = {}): { code: boolean; text: string }[] {
-  const parts: { code: boolean; text: string }[] = [];
-  let code = "";
-  let regexAllowed = true;
-  let lastWord = "";
-  const parens: boolean[] = [];
-  const flush = () => { if (code) { parts.push({ code: true, text: code }); code = ""; } };
-  const literal = (from: number, to: number) => { flush(); parts.push({ code: false, text: input.slice(from, to) }); regexAllowed = false; lastWord = ""; };
-  for (let i = 0; i < input.length; i += 1) {
-    const char = input[i];
-    if (char === '"' || char === "'") { const end = skipString(input, i); literal(i, end); i = end - 1; }
-    else if (js && char === "`") { const end = skipTemplate(input, i); literal(i, end); i = end - 1; }
-    else if (char === "/" && input[i + 1] === "*") {
-      const end = input.indexOf("*/", i + 2);
-      if (js) code += " ";
-      i = end === -1 ? input.length : end + 1;
-    } else if (js && char === "/" && input[i + 1] === "/") {
-      let end = i + 2;
-      while (end < input.length && !LINE_END.test(input[end])) end += 1;
-      code += "\n";
-      i = end;
-    } else if (js && char === "/" && regexAllowed) {
-      const end = skipRegex(input, i);
-      if (end === -1) { code += char; regexAllowed = true; lastWord = ""; } else { literal(i, end); i = end - 1; }
-    } else if (js && /[A-Za-z0-9_$\u0080-\uffff]/.test(char)) {
-      let end = i + 1;
-      while (end < input.length && /[A-Za-z0-9_$.\u0080-\uffff]/.test(input[end]) && !(input[end] === "." && !/\d/.test(char))) end += 1;
-      const word = input.slice(i, end);
-      code += word;
-      lastWord = word;
-      regexAllowed = REGEX_AFTER_WORD.has(word);
-      i = end - 1;
-    } else {
-      code += char;
-      if (js && !/\s/.test(char)) {
-        if (char === "(") { parens.push(CONDITION_WORDS.has(lastWord)); regexAllowed = true; }
-        else if (char === ")") regexAllowed = parens.pop() ?? false;
-        else if (char === "]") regexAllowed = false;
-        else if (char === "}") regexAllowed = true;
-        else regexAllowed = true;
-        lastWord = "";
-      }
-    }
+async function minifyJs(input: string): Promise<string> {
+  const { minify } = await import("terser");
+  try {
+    const result = await minify(input, { compress: false, mangle: false, format: { comments: false } });
+    return result.code ?? "";
+  } catch (cause) {
+    const error = cause as { message?: string; line?: number; col?: number };
+    throw new MinifyError(sentence(error.message ?? "This JavaScript could not be parsed"), typeof error.line === "number" ? error.line : null, typeof error.col === "number" ? error.col + 1 : null);
   }
-  flush();
-  return parts;
 }
 
-/** Collapse whitespace in the code parts only, then trim spaces around punctuation; literals pass through unchanged. */
-function squeeze(parts: { code: boolean; text: string }[], punctuation: RegExp): string {
-  return parts.map((part) => (part.code ? part.text.replace(/\s+/g, " ").replace(punctuation, "$1") : part.text)).join("").trim();
+/** CSS through csso with restructuring off, so rules keep their order and selectors their meaning. */
+async function minifyCss(input: string): Promise<string> {
+  const { minify } = await import("csso");
+  try {
+    return minify(input, { restructure: false, comments: false }).css;
+  } catch (cause) {
+    const error = cause as { message?: string; line?: number; column?: number };
+    throw new MinifyError(sentence(error.message ?? "This CSS could not be parsed"), typeof error.line === "number" ? error.line : null, typeof error.column === "number" ? error.column : null);
+  }
 }
 
-/** Strip comments and collapse whitespace. JSON is parsed, so invalid JSON throws. Strings are never changed. */
-export function minify(mode: Mode, input: string): string {
+/** True for the modes minified without a library (JSON, HTML), which can run during render and on the server. */
+export const isInstant = (mode: Mode) => mode === "json" || mode === "html";
+
+/** JSON and HTML, synchronously. JSON is parsed, so invalid JSON throws. */
+export function minifyInstant(mode: "json" | "html", input: string): string {
   if (mode === "json") return JSON.stringify(JSON.parse(input));
-  if (mode === "css") return squeeze(splitCode(input), /\s*([{}:;,>])\s*/g);
-  if (mode === "html") {
-    return input
-      .replace(/<!--[\s\S]*?-->/g, "")
-      .replace(/>\s+</g, "><")
-      .replace(/\s{2,}/g, " ")
-      .trim();
-  }
-  return squeeze(splitCode(input, { js: true }), /\s*([{};,=+\-*/%<>!&|?:()[\]])\s*/g);
+  return input
+    .replace(/<!--[\s\S]*?-->/g, "")
+    .replace(/>\s+</g, "><")
+    .replace(/\s{2,}/g, " ")
+    .trim();
+}
+
+/** Minify one snippet. JavaScript and CSS errors carry their line and column. */
+export async function minify(mode: Mode, input: string): Promise<string> {
+  if (mode === "css") return minifyCss(input);
+  if (mode === "js") return minifyJs(input);
+  return minifyInstant(mode, input);
 }

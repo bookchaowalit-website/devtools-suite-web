@@ -1,10 +1,8 @@
 "use client";
 
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useMemo, useState } from "react";
 import { CheckIcon, CopyBlocked, CopyIcon, ToolIntro, UndoToast, useCopy, useUndo, Workbench } from "@/components/workbench";
 import { renderMarkdown } from "@/lib/markdown-editor/render";
-
-const DRAFT_KEY = "devtools-suite:markdown-editor:draft-v1";
 
 const SAMPLE = `# Markdown Editor
 
@@ -32,31 +30,12 @@ console.log("hello");
 export default function MarkdownEditorTool() {
   const [source, setSource] = useState(SAMPLE);
   const [announcement, setAnnouncement] = useState("");
-  // Saving is opt-in (PRODUCT.md: nothing is stored unless you ask). A saved draft from an earlier visit turns it on.
-  const [keep, setKeep] = useState(false);
-  // The switch as it is now, read by Undo when it runs (not as it was when Reset was pressed).
-  const keepNow = useRef(false);
-  const [storageBlocked, setStorageBlocked] = useState(false);
   const undo = useUndo();
   const { copied, blocked, copy } = useCopy(source, (ok) => setAnnouncement(ok ? "Markdown copied to the clipboard." : "Copy was blocked. Select the text and copy it by hand."));
-  useEffect(() => {
-    const timer = window.setTimeout(() => {
-      try { const saved = localStorage.getItem(DRAFT_KEY); if (saved !== null) { setSource(saved); setKeep(true); keepNow.current = true; } } catch { setStorageBlocked(true); }
-    }, 0);
-    return () => window.clearTimeout(timer);
-  }, []);
-  const write = (text: string, on = keepNow.current) => {
-    try { if (on) localStorage.setItem(DRAFT_KEY, text); else localStorage.removeItem(DRAFT_KEY); } catch { setStorageBlocked(true); }
-  };
-  /** Typing goes through here: it saves when keeping is on, and ends any Undo offer so Undo never overwrites new text. */
-  const edit = (next: string) => { setSource(next); undo.dismiss(); write(next); };
-  // Changing the setting also ends any Undo offer, so an Undo can never save what you just asked to remove.
-  const toggleKeep = (on: boolean) => { setKeep(on); keepNow.current = on; undo.dismiss(); write(source, on); setAnnouncement(on ? "Draft is kept in this browser." : "Draft removed from this browser."); };
-  const reset = () => {
-    const before = source;
-    setSource(SAMPLE); write(SAMPLE);
-    undo.offer("Replaced with the sample.", () => { setSource(before); write(before); });
-  };
+  // Nothing is stored (PRODUCT.md: only the clipboard manager keeps data). Typing ends any Undo offer, so Undo never
+  // overwrites text written after Reset.
+  const edit = (next: string) => { setSource(next); undo.dismiss(); };
+  const reset = () => { const before = source; setSource(SAMPLE); undo.offer("Replaced with the sample.", () => setSource(before)); };
   // renderMarkdown escapes HTML in the source before adding its own tags. Headings move down one level: the page owns the h1.
   const preview = useMemo(() => renderMarkdown(source, { headingOffset: 1 }), [source]);
   const lines = source ? source.split("\n").length : 0;
@@ -80,10 +59,6 @@ export default function MarkdownEditorTool() {
           <textarea id="md-source" value={source} onChange={(event) => edit(event.target.value)} placeholder="Start writing Markdown" aria-describedby="md-meta" spellCheck={false} />
           <CopyBlocked show={blocked} what="the text" />
           <p id="md-meta" className="wb-pane-meta">{lines} lines · {words} words · {source.length} characters</p>
-          <label className="wb-switch wb-pane-switch">
-            <input type="checkbox" role="switch" checked={keep} disabled={storageBlocked} onChange={(event) => toggleKeep(event.target.checked)} />
-            <span>Keep draft in this browser<small>{storageBlocked ? "This browser blocks storage." : keep ? "Saved as you type. Turn off to remove it." : "Off: the text is gone when you close the tab."}</small></span>
-          </label>
         </section>
 
         <section className="wb-pane" aria-labelledby="md-preview-label">
@@ -98,7 +73,7 @@ export default function MarkdownEditorTool() {
       <p className="wb-sr" role="status" aria-live="polite">{announcement}</p>
       <UndoToast state={undo} />
 
-      <p className="wb-hint">Covers headings, bold, italic, links, bullet and numbered lists, nested by indenting two spaces, tables, quotes and code. Not a full CommonMark implementation. Nothing is saved unless you turn on “Keep draft in this browser”; that copy stays on this device only.</p>
+      <p className="wb-hint">Covers headings, bold, italic, links, bullet and numbered lists, nested by indenting two spaces, tables, quotes and code. Not a full CommonMark implementation. Nothing is saved: copy your text before you close the tab.</p>
     </Workbench>
   );
 }

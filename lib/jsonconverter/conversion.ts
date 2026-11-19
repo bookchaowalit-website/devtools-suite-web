@@ -61,7 +61,9 @@ export function describeProblem(input: string, cause: unknown): ParseProblem {
   const reason = (cause as { reason?: string } | null)?.reason;
   if (mark && typeof mark.line === "number" && typeof mark.column === "number") {
     const line = mark.line + 1; const column = mark.column + 1;
-    return { message: `Line ${line}, column ${column}: ${sentence(reason ?? "this YAML is not valid")}`, line, column, offset: typeof mark.position === "number" ? mark.position : offsetOf(input, line, column) };
+    // js-yaml drops a leading byte-order mark before counting, so its position is one short of the text's.
+    const bom = input.startsWith("\uFEFF") ? 1 : 0;
+    return { message: `Line ${line}, column ${column}: ${sentence(reason ?? "this YAML is not valid")}`, line, column, offset: typeof mark.position === "number" ? mark.position + bom : offsetOf(input, line, column) };
   }
   const text = cause instanceof Error ? cause.message : String(cause ?? "");
   // V8: "... (line 4 column 3)"; Firefox: "... at line 4 column 3 of the JSON data".

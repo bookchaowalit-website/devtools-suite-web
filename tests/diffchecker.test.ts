@@ -54,10 +54,10 @@ test("word diff marks only the words that changed, and changes pair up removed w
 });
 
 test("unified diff has headers, one hunk, +/- / space prefixes and a newline after every line", () => {
-  assert.equal(unifiedDiff("a\nb\n", "a\nc\n"), "--- original\n+++ changed\n@@ -1,2 +1,2 @@\n a\n-b\n+c\n");
-  assert.equal(unifiedDiff("", "x\n"), "--- original\n+++ changed\n@@ -0,0 +1,1 @@\n+x\n");
-  assert.equal(unifiedDiff("a", "b"), "--- original\n+++ changed\n@@ -1,1 +1,1 @@\n-a\n\\ No newline at end of file\n+b\n\\ No newline at end of file\n");
-  assert.equal(unifiedDiff("a\n", "a"), "--- original\n+++ changed\n@@ -1,1 +1,1 @@\n-a\n+a\n\\ No newline at end of file\n");
+  assert.equal(unifiedDiff("a\nb\n", "a\nc\n"), "--- a/file.txt\n+++ b/file.txt\n@@ -1,2 +1,2 @@\n a\n-b\n+c\n");
+  assert.equal(unifiedDiff("", "x\n"), "--- a/file.txt\n+++ b/file.txt\n@@ -0,0 +1,1 @@\n+x\n");
+  assert.equal(unifiedDiff("a", "b"), "--- a/file.txt\n+++ b/file.txt\n@@ -1,1 +1,1 @@\n-a\n\\ No newline at end of file\n+b\n\\ No newline at end of file\n");
+  assert.equal(unifiedDiff("a\n", "a"), "--- a/file.txt\n+++ b/file.txt\n@@ -1,1 +1,1 @@\n-a\n+a\n\\ No newline at end of file\n");
 });
 
 // Codex review, 2026-11-19 (post-push round): the copied patch must apply.
@@ -69,7 +69,7 @@ test("git apply accepts the copied diff and it reproduces the changed text", () 
     execFileSync("git", ["init", "-q"], { cwd: dir });
     for (const [left, right] of cases) {
       writeFileSync(join(dir, "f.txt"), left);
-      writeFileSync(join(dir, "p.diff"), unifiedDiff(left, right, { from: "a/f.txt", to: "b/f.txt" }));
+      writeFileSync(join(dir, "p.diff"), unifiedDiff(left, right, { file: "f.txt" }));
       execFileSync("git", ["apply", "p.diff"], { cwd: dir });
       assert.equal(readFileSync(join(dir, "f.txt"), "utf8"), right, JSON.stringify([left, right]));
     }
@@ -84,4 +84,11 @@ test("word diffs stop at a total budget and are skipped for an approximate diff"
   const words = wordDiffs(result.ops, result.approximate);
   assert.ok(words.size > 0 && words.size < 100);
   assert.equal(wordDiffs(result.ops, true).size, 0);
+});
+
+test("the patch names a real file path, cleaned of spaces and ..", async () => {
+  const { patchPath } = await import("@/lib/diffchecker/diff");
+  assert.match(unifiedDiff("a\n", "b\n", { file: "src/app.ts" }), /^--- a\/src\/app\.ts\n\+\+\+ b\/src\/app\.ts\n/);
+  assert.equal(patchPath(" ../my notes.txt "), "my-notes.txt");
+  assert.equal(patchPath(""), "file.txt");
 });

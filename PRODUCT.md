@@ -30,7 +30,7 @@ A developer who needs a quick, private, in-browser utility, and a portfolio visi
 | `/hashgen` | SHA-1, SHA-256, SHA-384 or SHA-512 of the entered text via Web Crypto, recomputed as you type; copy the digest. On the Workbench shell. | No MD5, bcrypt, file hashing or batch comparison. |
 | `/jsonconverter` | Pretty-print or minify JSON, and convert JSON ↔ YAML (js-yaml); errors are shown; copy output. Result updates as you type. On the Workbench shell. | No tree view, syntax highlighting, CSV or XML. |
 | `/markdown-editor` | Split-pane editor with a live preview from a small built-in renderer (escaped HTML, safe links only); reset sample; copy source. On the Workbench shell. | No syntax highlighting, themes, or export to HTML/PDF/MDX. |
-| `/minifier` | Shrink CSS, HTML or JS with regex replacements and JSON through `JSON.parse`; size savings; copy. It says it is not a production compiler. Result and size saving update as you type; logic in `lib/minifier/minify.ts`. On the Workbench shell. | No real parser-based minification, source maps or mangling. |
+| `/minifier` | Shrink JS with terser and CSS with csso (both loaded only on this page, renaming and restructuring off), HTML with a comment and whitespace stripper, and JSON through `JSON.parse`; parse errors give line and column; size savings; copy. Logic in `lib/minifier/minify.ts`. On the Workbench shell. | No source maps or mangling. |
 | `/number-converter` | Four synced inputs (binary, octal, decimal, hexadecimal) using BigInt, so large integers convert exactly; invalid input is flagged. On the Workbench shell. | No bit visualisation or signed/unsigned representations. |
 | `/regex` | Live JavaScript RegExp tester with flag toggles, highlighted matches and capture groups, on the main thread. Default pattern fixed (it was "\b\w+\b" in a plain string, so it matched nothing); logic in `lib/regex/run.ts`. On the Workbench shell. | No pattern library or Web Worker execution. |
 | `/url-encoder` | `encodeURIComponent` / `decodeURIComponent` / `encodeURI` / `decodeURI` (chosen as Encode/Decode × Query value/Full URL), live result, swap-and-reverse, and a `URLSearchParams` query inspector. On the Workbench shell. | No query builder, batch mode, full URL parsing or double-encoding handling. |
@@ -61,5 +61,19 @@ Front-end and server errors go to Sentry (errors only, personal data stripped) w
 ## Boundaries
 
 - No accounts, no server storage, no analytics or tracking scripts (removed 2026-11-17). Only the clipboard manager
-  writes to `localStorage` by default; the Markdown editor writes its draft there only after you turn on
-  "Keep draft in this browser" (off by default, 2026-11-19), and turning it off removes the draft.
+  writes to `localStorage`. (The Markdown editor's opt-in draft saving was removed again on 2026-11-19 to keep this
+  boundary: the editor keeps text in memory only.)
+
+## Known limits
+
+Recorded 2026-11-19 after the last polish round; new review findings go here instead of another round.
+
+- Code Minifier: JavaScript (terser) and CSS (csso) run with renaming and restructuring off, so results are
+  safe but not as small as a full build. HTML is a simple comment and whitespace stripper, not an HTML parser.
+- Markdown Editor: a small renderer, not CommonMark (no reference links, HTML blocks or footnotes); nothing is saved.
+- Diff Checker: one unified-diff hunk for the whole text; very long texts fall back to an approximate diff with
+  a notice, and word highlighting stops at a page-wide budget.
+- Hash Generator: files up to 512 MB, one read at a time; Undo after Clear does not bring back a file that was
+  still being read.
+- Regex Tester: Replace stops at 1,000 matches, 200,000 characters or a fixed amount of template work, and says so.
+- Latency Test: cross-site results cannot show the HTTP status; timing ends at the response headers.

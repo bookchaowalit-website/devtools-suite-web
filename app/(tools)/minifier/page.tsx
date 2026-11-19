@@ -1,20 +1,21 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { AlertIcon, CheckIcon, CopyBlocked, CopyIcon, Segmented, ToolIntro, UndoToast, useCopy, useUndo, Workbench } from "@/components/workbench";
-import { MODES, SAMPLES, minify, type Mode } from "@/lib/minifier/minify";
+import { isInstant, MODES, SAMPLES, minify, minifyInstant, type Mode } from "@/lib/minifier/minify";
 
 const LABEL: Record<Mode, string> = { json: "JSON", css: "CSS", html: "HTML", js: "JavaScript" };
 const OPTIONS = MODES.map((value) => ({ value, label: value === "js" ? "JS" : LABEL[value] }));
 const bytes = (text: string) => new TextEncoder().encode(text).length;
 
-function run(mode: Mode, input: string): { output: string; error: string } {
+type Result = { output: string; error: string };
+const failure = (cause: unknown): Result => ({ output: "", error: cause instanceof Error ? cause.message : "This input could not be minified." });
+
+/** JSON and HTML minify during render (also on the server); JavaScript and CSS go through terser / csso in an effect. */
+function runInstant(mode: Mode, input: string): Result | null {
   if (!input.trim()) return { output: "", error: "" };
-  try {
-    return { output: minify(mode, input), error: "" };
-  } catch (cause) {
-    return { output: "", error: cause instanceof Error ? cause.message : "This input could not be minified." };
-  }
+  if (!isInstant(mode)) return null;
+  try { return { output: minifyInstant(mode as "json" | "html", input), error: "" }; } catch (cause) { return failure(cause); }
 }
 
 export default function MinifierTool() {
@@ -24,7 +25,18 @@ export default function MinifierTool() {
   // Set by Clear: switching language after clearing keeps the box empty instead of filling in a sample over it.
   const [cleared, setCleared] = useState(false);
   const undo = useUndo();
-  const { output, error } = run(mode, input);
+  const instant = runInstant(mode, input);
+  // A library result is kept with the mode and input it belongs to, so a slower, older run never shows.
+  const [library, setLibrary] = useState<{ key: string; result: Result } | null>(null);
+  const key = `${mode}\u0000${input}`;
+  useEffect(() => {
+    if (instant) return;
+    let cancelled = false;
+    minify(mode, input).then((output) => ({ output, error: "" }), failure).then((result) => { if (!cancelled) setLibrary({ key: `${mode}\u0000${input}`, result }); });
+    return () => { cancelled = true; };
+  }, [instant, mode, input]);
+  const pending = !instant && library?.key !== key;
+  const { output, error } = instant ?? (library?.key === key ? library.result : { output: "", error: "" });
   const { copied, blocked, copy } = useCopy(output, (ok) => setAnnouncement(ok ? "Minified code copied to the clipboard." : "Copy was blocked. Select the result and copy it by hand."));
 
   // Switching language swaps in that language's sample only if you have not typed your own code.
@@ -70,7 +82,7 @@ export default function MinifierTool() {
               {copied ? <><CheckIcon />Copied</> : <><CopyIcon />Copy</>}
             </button>
           </div>
-          <textarea id="min-output" value={output} readOnly placeholder="The minified code appears here as you type" aria-describedby="min-output-meta" spellCheck={false} />
+          <textarea id="min-output" value={output} readOnly placeholder={pending ? "Minifying…" : error ? "Fix the input to see the result" : "The minified code appears here as you type"} aria-describedby="min-output-meta" spellCheck={false} />
           <CopyBlocked show={blocked} />
           <p id="min-output-meta" className="wb-pane-meta wb-stats">
             <span>{after.toLocaleString("en")} bytes</span>
@@ -81,7 +93,7 @@ export default function MinifierTool() {
       <p className="wb-sr" role="status" aria-live="polite">{announcement}</p>
       <UndoToast state={undo} />
 
-      <p className="wb-hint">A simple whitespace and comment stripper for snippets and demos, not a production compiler. Strings, template literals and regular expression literals are kept exactly. Line breaks are removed, so code that relies on automatic semicolons may break.</p>
+      <p className="wb-hint">JavaScript goes through terser and CSS through csso, the minifiers real build tools use, with renaming and restructuring off so the result still reads like your code. HTML is a simple comment and whitespace stripper.</p>
     </Workbench>
   );
 }

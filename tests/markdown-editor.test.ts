@@ -51,3 +51,7 @@ test("a table ends where the next block starts", () => {
 test("an escaped pipe stays inside its table cell", () => {
   assert.equal(renderMarkdown("| A | B |\n| - | - |\n| a \\| b | next |"), '<table><thead><tr><th scope="col">A</th><th scope="col">B</th></tr></thead><tbody><tr><td>a | b</td><td>next</td></tr></tbody></table>');
 });
+
+test("a table needs as many separator cells as header cells", () => {
+  assert.equal(renderMarkdown("| A | B |\n| - |\n| 1 | 2 |").includes("<table>"), false);
+});

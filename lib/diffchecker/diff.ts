@@ -105,7 +105,15 @@ function patchLines(text: string): string[] {
  * line is a line (not an empty file), and a line without a final newline only matches the same line without one, so it
  * shows as changed and gets "\ No newline at end of file" after it.
  */
-export function unifiedDiff(left: string, right: string, { from = "original", to = "changed" }: { from?: string; to?: string } = {}): string {
+/** A file path safe for a patch header: no spaces or control characters, no leading slash or "..", default file.txt. */
+export function patchPath(name: string): string {
+  const clean = name.trim().replace(/\\/g, "/").replace(/[\s\u0000-\u001f]+/g, "-").split("/").filter((part) => part && part !== "." && part !== "..").join("/");
+  return clean || "file.txt";
+}
+
+/** `file` is the path both sides share, written as a/<file> and b/<file> as git does (so `git apply` finds it). */
+export function unifiedDiff(left: string, right: string, { file = "file.txt" }: { file?: string } = {}): string {
+  const from = `a/${patchPath(file)}`; const to = `b/${patchPath(file)}`;
   const { ops } = diffArrays(patchLines(left), patchLines(right));
   const leftCount = ops.filter((op) => op.type !== "add").length;
   const rightCount = ops.filter((op) => op.type !== "del").length;

@@ -38,5 +38,9 @@ test("groupBy works for keys such as constructor, and useLocalStorage never writ
   const run = new Function(`${js}; return groupBy;`)() as (items: string[], key: (item: string) => string) => Map<string, string[]>;
   assert.deepEqual([...run(["a", "b"], (item) => (item === "a" ? "constructor" : "toString")).entries()], [["constructor", ["a"]], ["toString", ["b"]]]);
   const storage = SNIPPETS.find((snippet) => snippet.title === "useLocalStorage");
-  assert.match(storage?.code ?? "", /if \(state\.key !== key\) return;/);
+  assert.match(storage?.code ?? "", /if \(!state\.loaded \|\| state\.key !== key\) return;/);
+  assert.doesNotMatch(storage?.code ?? "", /useState\(\(\) => \(\{ key, value: read/);
+  const debounce = SNIPPETS.find((snippet) => snippet.title === "useDebounce");
+  assert.match(debounce?.code ?? "", /useState<T>\(\(\) => value\)/);
+  assert.match(debounce?.code ?? "", /setDebounced\(\(\) => value\)/);
 });
