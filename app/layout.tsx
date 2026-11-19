@@ -40,7 +40,7 @@ export default function RootLayout({ children }: Readonly<{ children: React.Reac
             <a href="https://bookchaowalit.com/" className="suite-hub">Bookchaowalit</a>
           </nav>
         </header>
-        <div id="main" tabIndex={-1}>{children}</div>
+        {children}
         <footer className="suite-footer">
           <nav aria-label="Site">
             <a href="https://bookchaowalit.com/">More projects</a>

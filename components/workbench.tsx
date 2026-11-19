@@ -7,7 +7,7 @@ import { useEffect, useRef, useState, useSyncExternalStore, type ReactNode } fro
  */
 
 export function Workbench({ children }: { children: ReactNode }) {
-  return <main className="wb"><div className="wb-page">{children}</div></main>;
+  return <main id="main" tabIndex={-1} className="wb"><div className="wb-page">{children}</div></main>;
 }
 
 const LockIcon = () => (
