@@ -99,3 +99,4 @@ instead of starting another devtools round.
 - Regex Tester: when Replace stops at the work cap, the note names the match and size caps, not the work cap.
 - Markdown Editor: a wide table scrolls inside the preview, which Safari does not focus from the keyboard.
 - JSON Converter: if the pasted text itself contains "at position N", that number can be read as the error position.
+- Cron next runs across a DST change use one rule for every field; fixed-time jobs that cron daemons skip or run twice on that day are not modelled separately.

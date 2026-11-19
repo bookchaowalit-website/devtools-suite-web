@@ -56,26 +56,30 @@ test("JavaScript modules with import, export and top-level await minify", async 
 
 // CSS (2026-11-19, final): comments and whitespace only, so no value, unit, selector or at-rule is ever rewritten.
 test("CSS values and units are never rewritten", async () => {
-  assert.equal(await minify("css", ".a {\n  flex-basis: 0%;\n  width: calc(100% - 0px);\n  height: hypot(0px, 20px);\n  padding: 0px;\n}"), ".a{flex-basis: 0%;width: calc(100% - 0px);height: hypot(0px, 20px);padding: 0px}");
-  assert.equal(await minify("css", "@property --size {\n  syntax: '<length>';\n  inherits: false;\n  initial-value: 0px;\n}"), "@property --size{syntax: '<length>';inherits: false;initial-value: 0px}");
+  assert.equal(await minify("css", ".a {\n  flex-basis: 0%;\n  width: calc(100% - 0px);\n  height: hypot(0px, 20px);\n  padding: 0px;\n}"), ".a{flex-basis: 0%;width: calc(100% - 0px);height: hypot(0px, 20px);padding: 0px;}");
+  assert.equal(await minify("css", "@property --size {\n  syntax: '<length>';\n  inherits: false;\n  initial-value: 0px;\n}"), "@property --size{syntax: '<length>';inherits: false;initial-value: 0px;}");
   assert.equal(await minify("css", '@layer reset, base;\n@import url("base.css") layer(base);'), '@layer reset, base;@import url("base.css") layer(base);');
-  assert.equal(await minify("css", ".card { color: red; & .title { color: blue; } }"), ".card{color: red;& .title{color: blue}}");
+  assert.equal(await minify("css", ".card { color: red; & .title { color: blue; } }"), ".card{color: red;& .title{color: blue;}}");
 });
 
 test("backslash escapes are kept whole, inside strings or not", async () => {
   assert.equal(await minify("css", ".a\\;b {}"), ".a\\;b{}");
   assert.equal(await minify("css", ".a\\; b { }"), ".a\\; b{}");
-  assert.equal(await minify("css", ".a\\:hover { color: red; }"), ".a\\:hover{color: red}");
-  assert.equal(await minify("css", '.a::before { content: "\\""; }'), '.a::before{content: "\\""}');
+  assert.equal(await minify("css", ".a\\:hover { color: red; }"), ".a\\:hover{color: red;}");
+  assert.equal(await minify("css", '.a::before { content: "\\""; }'), '.a::before{content: "\\"";}');
   // A hex escape keeps the one space that ends it, and a real space after it survives too.
   assert.equal(await minify("css", ".\\31 0  .b { color: red }"), ".\\31 0 .b{color: red}");
-  assert.equal(await minify("css", ".a\\}b { color: red; }"), ".a\\}b{color: red}");
+  assert.equal(await minify("css", ".a\\}b { color: red; }"), ".a\\}b{color: red;}");
 });
 
 test("strings, url() and comments", async () => {
   assert.equal(await minify("css", '@import url("/styles/a;}.css");'), '@import url("/styles/a;}.css");');
-  assert.equal(await minify("css", '.a { content: "a  b /* x */"; background: url("x y.png"); }'), '.a{content: "a  b /* x */";background: url("x y.png")}');
-  assert.equal(await minify("css", ".a { background: url( x;}y.png ); }"), ".a{background: url( x;}y.png )}");
-  assert.equal(await minify("css", ".a/**/.b { margin: 1px/**/2px; }"), ".a/**/.b{margin: 1px/**/2px}");
+  assert.equal(await minify("css", '.a { content: "a  b /* x */"; background: url("x y.png"); }'), '.a{content: "a  b /* x */";background: url("x y.png");}');
+  assert.equal(await minify("css", ".a { background: url( x;}y.png ); }"), ".a{background: url( x;}y.png );}");
+  assert.equal(await minify("css", ".a/**/.b { margin: 1px/**/2px; }"), ".a/**/.b{margin: 1px/**/2px;}");
   assert.equal(await minify("css", "a { color: red } /* x */ b { color: blue }"), "a{color: red}b{color: blue}");
+});
+
+test("keeps a semicolon that belongs to a custom-property value", async () => {
+  assert.equal(await minify("css", ".a{--theme:{color:red;};}"), ".a{--theme:{color:red;};}");
 });

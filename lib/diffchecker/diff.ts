@@ -109,7 +109,7 @@ export function pairChanges(ops: Op[]): Map<number, number> {
  * control characters, a leading "/", "." and ".." segments are removed. Default file.txt.
  */
 export function patchPath(name: string): string {
-  const clean = name.trim().replace(/\\/g, "/").replace(/[\u0000-\u001f\u007f]+/g, "").split("/").map((part) => part.trim()).filter((part) => part && part !== "." && part !== "..").join("/");
+  const clean = name.replace(/^\s+|\s+$/g, "").replace(/\\/g, "/").replace(/[\u0000-\u001f\u007f]+/g, "").split("/").filter((part) => part && part !== "." && part !== "..").join("/");
   return clean || "file.txt";
 }
 

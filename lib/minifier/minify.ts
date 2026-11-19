@@ -106,10 +106,9 @@ export function minifyCss(input: string): string {
       if (before && after && /[^\s{};,:>]/.test(before) && /[^\s{};,:>]/.test(after)) { out.push("/**/"); lastWasCode = false; }
       return;
     }
-    let text = part.text.replace(/\s+/g, " ").replace(/\s*([{};])\s*/g, "$1").replace(/;}/g, "}");
+    let text = part.text.replace(/\s+/g, " ").replace(/\s*([{};])\s*/g, "$1"); // every ";" is kept: one before "}" can belong to a custom-property value
     // Code pieces split by a removed comment join as if the comment were never there (only code ends are touched).
     if (lastWasCode) {
-      if (lastChar() === ";" && text.startsWith("}")) dropLastChar();
       if (lastChar() === " " && (/^[{};]/.test(text) || text.startsWith(" "))) dropLastChar();
       if (/[{};]/.test(lastChar())) text = text.replace(/^ /, "");
     }

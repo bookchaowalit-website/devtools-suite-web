@@ -11,7 +11,7 @@ export const TIMEOUT_MS = 10_000;
 export function normalizeTarget(input: string, origin: string): { url: string; host: string } | { error: string } {
   // Zero-width characters that ride along with a paste are trimmed from the ends only: inside the URL they can be
   // meant (an emoji sequence in a query), so the URL is measured as typed.
-  const value = input.trim().replace(/^[\u200B-\u200D\u2060\uFEFF]+|[\u200B-\u200D\u2060\uFEFF]+$/g, "").trim();
+  const value = input.replace(/^[\s\u200B-\u200D\u2060\uFEFF]+|[\s\u200B-\u200D\u2060\uFEFF]+$/g, "");
   if (!value) return { error: "Enter a URL or a path such as /." };
   // "localhost:3000" and "example.com:8080/health" are a host and port, not a
   // URL scheme called "localhost:" — only treat the prefix as a scheme when it
