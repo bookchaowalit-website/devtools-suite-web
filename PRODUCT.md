@@ -71,21 +71,29 @@ instead of starting another devtools round.
 
 - Code Minifier, JavaScript: terser with renaming and compression off; code that is not a valid script is retried as
   a module (import/export, top-level await), and if both fail the script parse error is shown.
-- Code Minifier, CSS: csso with restructuring off. CSS with `@import`, `@layer` or a math function (calc, min, max,
-  clamp, hypot, …) gets a comment-and-whitespace-only minify with a note, because csso drops an `@import` after
-  `@layer` and strips units from zero there; CSS that csso would shorten by dropping blocks (nested rules) is refused.
+- Code Minifier, CSS: csso with restructuring off. CSS with `@import`, `@layer`, a math function (calc, calc-size,
+  min, max, clamp, hypot, …) or any backslash escape gets a light minify with a note, because csso drops an `@import`
+  after `@layer` and strips units from zero there; the light minify never touches strings, url() or their contents.
+  CSS that csso would shorten by dropping blocks (nested rules) is refused.
 - Code Minifier, CSS parse errors: csso is tolerant, so positions are shown only when it reports one.
 - Code Minifier, HTML: a comment and whitespace stripper, not an HTML parser.
 - Markdown Editor: a small renderer, not CommonMark; tables preview at most 50 columns and 5,000 cells; nothing is saved.
 - Regex Tester: Replace stops at 1,000 matches, 200,000 characters or a fixed amount of template work, and says so.
 - Diff Checker: lines split on "\n" only, so CRLF text compares with "\r" kept at line ends; one hunk for the whole
   text; very long texts get an approximate diff with a notice.
+- Diff Checker, CRLF: browsers turn CRLF into LF when text is pasted into a box, so a patch for a CRLF file has LF
+  line ends and may need `git apply --ignore-whitespace`.
+- Diff Checker, work: the patch re-runs the line comparison instead of reusing the preview's result.
 - Diff Checker, patch paths: spaces are kept with git's tab-terminated header; "..", a leading "/" and control
   characters are removed; renaming the file field updates the patch, the comparison itself is not re-run.
 - Hash Generator: files up to 512 MB; one file read and one hash job at a time (newest request wins), and a hash
   already running finishes before the next starts; Undo after Clear does not bring back a file still being read.
+- Hash Generator, Clear: a hash job already queued when you press Clear still runs once (its result is not shown).
 - Date Calculator: "In months" counts forward from the earlier date, so a backward span can read differently from
   subtracting months in the other card (Mar 31 to Feb 28 shows −1 month 3 days).
 - Latency Test: cross-site results cannot show the HTTP status; timing ends at the response headers.
-- Undo toasts last six seconds and pause only while focused or hovered; focus moves to Undo only when the control
-  that triggered it is gone.
+- Undo toasts last six seconds and pause while focused or hovered; leaving either one restarts the countdown even if
+  the other still applies; focus moves to Undo only when the control that triggered it is gone.
+- Regex Tester: when Replace stops at the work cap, the note names the match and size caps, not the work cap.
+- Markdown Editor: a wide table scrolls inside the preview, which Safari does not focus from the keyboard.
+- JSON Converter: if the pasted text itself contains "at position N", that number can be read as the error position.

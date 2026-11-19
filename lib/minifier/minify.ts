@@ -57,45 +57,86 @@ export function countBlocks(css: string): number {
 }
 
 /** Math functions (any case) whose zero arguments must keep their unit: csso turns 0px into 0 inside them. */
-const CSS_MATH = /\b(calc|min|max|clamp|round|mod|rem|sin|cos|tan|asin|acos|atan|atan2|pow|sqrt|hypot|log|exp|abs|sign)\s*\(/i;
+const CSS_MATH = /(^|[^\w-])(calc|calc-size|min|max|clamp|round|mod|rem|sin|cos|tan|asin|acos|atan|atan2|pow|sqrt|hypot|log|exp|abs|sign)\s*\(/i;
+
+type CssPart = { kind: "code" | "string" | "url" | "comment"; text: string };
+
+/**
+ * Splits CSS into strings ('…', "…"), unquoted url(…) and comments, kept byte for byte, and the code between them.
+ * Escapes inside strings and url() are honoured, so a quote, ";", "}" or "/*" there never ends the piece early.
+ */
+export function cssParts(input: string): CssPart[] {
+  const parts: CssPart[] = [];
+  let code = "";
+  const flush = () => { if (code) { parts.push({ kind: "code", text: code }); code = ""; } };
+  for (let i = 0; i < input.length; i += 1) {
+    const char = input[i];
+    if (char === "\\") { code += input.slice(i, i + 2); i += 1; }
+    else if (char === '"' || char === "'") {
+      let end = i + 1;
+      while (end < input.length && input[end] !== char && input[end] !== "\n") end += input[end] === "\\" ? 2 : 1;
+      flush(); parts.push({ kind: "string", text: input.slice(i, end + 1) }); i = end;
+    } else if (char === "/" && input[i + 1] === "*") {
+      const end = input.indexOf("*/", i + 2);
+      const stop = end === -1 ? input.length : end + 2;
+      flush(); parts.push({ kind: "comment", text: input.slice(i, stop) }); i = stop - 1;
+    } else if ((char === "(") && /url$/i.test(code) && !/[\w-]url$/i.test(code)) {
+      // Unquoted url(…): everything to the closing ")" is the address. A quoted url("…") is read as a string.
+      let start = i + 1;
+      while (start < input.length && /\s/.test(input[start])) start += 1;
+      if (input[start] === '"' || input[start] === "'") { code += char; continue; }
+      let end = start;
+      while (end < input.length && input[end] !== ")") end += input[end] === "\\" ? 2 : 1;
+      code += "("; flush(); parts.push({ kind: "url", text: input.slice(i + 1, end) }); i = end - 1;
+    } else code += char;
+  }
+  flush();
+  return parts;
+}
 
 /**
  * Why a CSS input gets the light minify instead of csso, or "" when csso is safe. csso 5 drops a valid @import that
- * follows an @layer statement and strips units from zero inside calc() and the other math functions.
+ * follows an @layer statement and strips units from zero inside calc(), calc-size() and the other math functions.
+ * Only code is checked (not strings, url() or comments); any escape (\\63 alc() also takes the light path, since an
+ * escaped function name cannot be checked by name.
  */
 export function cssLightReason(input: string): string {
-  const code = input.replace(/\/\*[\s\S]*?\*\//g, "").replace(/"(?:[^"\\]|\\.)*"|'(?:[^'\\]|\\.)*'/g, '""');
+  const code = cssParts(input).filter((part) => part.kind === "code").map((part) => part.text).join(" ");
   if (/@import\b/i.test(code) || /@layer\b/i.test(code)) return "This CSS uses @import or @layer, so only comments and extra whitespace were removed (the full minifier can drop an @import that follows @layer).";
-  if (CSS_MATH.test(code)) return "This CSS uses calc() or another math function, so only comments and extra whitespace were removed (the full minifier can turn 0px into 0 there, which breaks the value).";
+  if (CSS_MATH.test(code) || code.includes("\\")) return "This CSS uses calc() or another math function, so only comments and extra whitespace were removed (the full minifier can turn 0px into 0 there, which breaks the value).";
   return "";
 }
 const cssNeedsLightMode = (input: string) => cssLightReason(input) !== "";
 
 /**
- * Light CSS minify: removes comments and collapses whitespace, and drops spaces only next to { } and ;, which never
- * changes meaning. Strings are kept as written; a comment between two tokens (.a, a comment, .b) stays as an empty
- * comment so the tokens are not joined or split.
+ * Light CSS minify. Strings, url(…) and their contents are never touched. Comments are removed (an empty comment is
+ * kept where removing it would join two tokens, as in .a, a comment, .b); in the code between, whitespace collapses to
+ * one space and is dropped only next to { } and ;, and a ";" right before "}" goes. None of this changes meaning.
  */
 export function lightCss(input: string): string {
-  let out = "";
-  for (let i = 0; i < input.length; i += 1) {
-    const char = input[i];
-    if (char === '"' || char === "'") {
-      let end = i + 1;
-      while (end < input.length && input[end] !== char && input[end] !== "\n") end += input[end] === "\\" ? 2 : 1;
-      out += input.slice(i, end + 1);
-      i = end;
-    } else if (char === "/" && input[i + 1] === "*") {
-      const end = input.indexOf("*/", i + 2);
-      const next = end === -1 ? "" : input[end + 2] ?? "";
-      const previous = out[out.length - 1] ?? "";
-      if (/[^\s{};,:>]/.test(previous) && /[^\s{};,:>]/.test(next)) out += "/**/";
-      i = end === -1 ? input.length : end + 1;
-    } else if (/\s/.test(char)) {
-      if (!/\s$/.test(out)) out += " ";
-    } else out += char;
-  }
-  return out.replace(/\s*([{};])\s*/g, "$1").replace(/;}/g, "}").trim();
+  const parts = cssParts(input);
+  const out: string[] = [];
+  let lastWasCode = false;
+  const lastChar = () => { const piece = out[out.length - 1]; return piece ? piece[piece.length - 1] : ""; };
+  const dropLastChar = () => { out[out.length - 1] = out[out.length - 1].slice(0, -1); if (!out[out.length - 1]) out.pop(); };
+  parts.forEach((part, index) => {
+    if (part.kind === "string" || part.kind === "url") { out.push(part.text); lastWasCode = false; return; }
+    if (part.kind === "comment") {
+      const before = lastChar();
+      const after = parts[index + 1]?.text[0] ?? "";
+      if (before && after && /[^\s{};,:>]/.test(before) && /[^\s{};,:>]/.test(after)) { out.push("/**/"); lastWasCode = false; }
+      return;
+    }
+    let text = part.text.replace(/\s+/g, " ").replace(/\s*([{};])\s*/g, "$1").replace(/;}/g, "}");
+    // Pieces split by a removed comment join as if the comment were never there (only code ends are touched).
+    if (lastWasCode) {
+      if (lastChar() === ";" && text.startsWith("}")) dropLastChar();
+      if (lastChar() === " " && (/^[{};]/.test(text) || text.startsWith(" "))) dropLastChar();
+      if (/[{};]/.test(lastChar())) text = text.replace(/^ /, "");
+    }
+    if (text) { out.push(text); lastWasCode = true; }
+  });
+  return out.join("").trim();
 }
 
 /**
