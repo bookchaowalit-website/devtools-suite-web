@@ -49,13 +49,40 @@ test("CSS keeps selector meaning and escaped characters", async () => {
 
 // Codex review, 2026-11-19 (last round).
 test("CSS that csso would cut is refused with an error, never returned short", async () => {
-  for (const css of [".card { color: red; & .title { color: blue; } }", "body { color: red; & > a { color: green } }", "@layer base {}\n.a { color: red }"]) {
+  for (const css of [".card { color: red; & .title { color: blue; } }", "body { color: red; & > a { color: green } }"]) {
     await assert.rejects(() => minify("css", css), (error: unknown) => error instanceof MinifyError && /would drop \d+ block/.test(error.message), css);
   }
   assert.equal(await minify("css", "@media (min-width: 1px) { .a { color: red } }"), "@media (min-width:1px){.a{color:red}}");
+  // An empty @layer block takes the light path and is kept.
+  assert.equal(await minify("css", "@layer base {}\n.a { color: red }"), "@layer base{}.a{color: red}");
 });
 
 test("JavaScript modules with import, export and top-level await minify", async () => {
   assert.equal(await minify("js", "export const response = await fetch('/api');"), 'export const response=await fetch("/api");');
   assert.equal(await minify("js", "import { a } from './a.js';\nexport default a;"), 'import{a}from"./a.js";export default a;');
+});
+
+// Codex review, 2026-11-19 (P1): csso drops @import after @layer and strips units from zero in math functions.
+test("@import after @layer is kept (light minify, with a reason)", async () => {
+  const { cssLightReason } = await import("@/lib/minifier/minify");
+  const css = '@layer reset, base;\n@import url("base.css") layer(base);\n/* c */\n.a {\n  color: red;\n}';
+  assert.equal(await minify("css", css), '@layer reset, base;@import url("base.css") layer(base);.a{color: red}');
+  assert.match(cssLightReason(css), /@import or @layer/);
+});
+
+test("zero keeps its unit inside calc, min, max, clamp and hypot, in any case", async () => {
+  const { cssLightReason } = await import("@/lib/minifier/minify");
+  const css = ".a {\n  width: CALC(100% - 0px);\n  margin: max(0px, 1em);\n  top: min(0%, 2px);\n  left: clamp(0px, 1vw, 3px);\n  height: hypot(0px, 20px);\n}";
+  const out = await minify("css", css);
+  for (const kept of ["CALC(100% - 0px)", "max(0px, 1em)", "min(0%, 2px)", "clamp(0px, 1vw, 3px)", "hypot(0px, 20px)"]) assert.ok(out.includes(kept), `${kept} in ${out}`);
+  assert.match(cssLightReason(css), /calc\(\)/);
+  // Without @import, @layer or math functions csso still does the full job.
+  assert.equal(cssLightReason(".a { padding: 0px }"), "");
+  assert.equal(await minify("css", ".a { padding: 0px }"), ".a{padding:0}");
+});
+
+test("the light minify never joins or splits tokens around comments and keeps strings", async () => {
+  const { lightCss } = await import("@/lib/minifier/minify");
+  assert.equal(lightCss(".a/**/.b { margin: 1px/**/2px; content: \"a  /* b */\"; }"), '.a/**/.b{margin: 1px/**/2px;content: "a  /* b */"}');
+  assert.equal(lightCss("a { color: red } /* x */ b { color: blue }"), "a{color: red}b{color: blue}");
 });

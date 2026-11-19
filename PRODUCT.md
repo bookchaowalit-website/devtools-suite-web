@@ -66,21 +66,26 @@ Front-end and server errors go to Sentry (errors only, personal data stripped) w
 
 ## Known limits
 
-Recorded 2026-11-19 after the last polish round. Review findings after this point are listed here instead of
-starting another devtools round.
+Recorded 2026-11-19 after the last polish round. Review findings after this point are listed here, one line each,
+instead of starting another devtools round.
 
-- Code Minifier: JavaScript (terser) and CSS (csso) run with renaming and restructuring off, so results are safe
-  but not as small as a full build. JavaScript that is not a valid script is retried as a module; if both fail, the
-  script parse error is shown. CSS that csso would shorten by dropping blocks (nested rules, empty `@layer` or rule
-  blocks) is refused with an error instead of minified. HTML is a comment and whitespace stripper, not a parser.
-- Markdown Editor: a small renderer, not CommonMark (no reference links, HTML blocks or footnotes); tables preview
-  at most 50 columns and 5,000 cells; nothing is saved.
-- Diff Checker: one unified-diff hunk for the whole text; very long texts fall back to an approximate diff with a
-  notice, and word highlighting stops at a page-wide budget. File paths in the patch drop "..", a leading "/" and
-  control characters.
-- Hash Generator: files up to 512 MB; one file read and one hash job at a time (newest request wins). Undo after
-  Clear does not bring back a file that was still being read.
+- Code Minifier, JavaScript: terser with renaming and compression off; code that is not a valid script is retried as
+  a module (import/export, top-level await), and if both fail the script parse error is shown.
+- Code Minifier, CSS: csso with restructuring off. CSS with `@import`, `@layer` or a math function (calc, min, max,
+  clamp, hypot, …) gets a comment-and-whitespace-only minify with a note, because csso drops an `@import` after
+  `@layer` and strips units from zero there; CSS that csso would shorten by dropping blocks (nested rules) is refused.
+- Code Minifier, CSS parse errors: csso is tolerant, so positions are shown only when it reports one.
+- Code Minifier, HTML: a comment and whitespace stripper, not an HTML parser.
+- Markdown Editor: a small renderer, not CommonMark; tables preview at most 50 columns and 5,000 cells; nothing is saved.
 - Regex Tester: Replace stops at 1,000 matches, 200,000 characters or a fixed amount of template work, and says so.
+- Diff Checker: lines split on "\n" only, so CRLF text compares with "\r" kept at line ends; one hunk for the whole
+  text; very long texts get an approximate diff with a notice.
+- Diff Checker, patch paths: spaces are kept with git's tab-terminated header; "..", a leading "/" and control
+  characters are removed; renaming the file field updates the patch, the comparison itself is not re-run.
+- Hash Generator: files up to 512 MB; one file read and one hash job at a time (newest request wins), and a hash
+  already running finishes before the next starts; Undo after Clear does not bring back a file still being read.
+- Date Calculator: "In months" counts forward from the earlier date, so a backward span can read differently from
+  subtracting months in the other card (Mar 31 to Feb 28 shows −1 month 3 days).
 - Latency Test: cross-site results cannot show the HTTP status; timing ends at the response headers.
-- Undo toasts last six seconds, paused while focused or hovered; focus moves to Undo only when the control that
-  triggered it is gone.
+- Undo toasts last six seconds and pause only while focused or hovered; focus moves to Undo only when the control
+  that triggered it is gone.

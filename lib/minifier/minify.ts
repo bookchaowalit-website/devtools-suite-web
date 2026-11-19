@@ -56,12 +56,55 @@ export function countBlocks(css: string): number {
   return count;
 }
 
+/** Math functions (any case) whose zero arguments must keep their unit: csso turns 0px into 0 inside them. */
+const CSS_MATH = /\b(calc|min|max|clamp|round|mod|rem|sin|cos|tan|asin|acos|atan|atan2|pow|sqrt|hypot|log|exp|abs|sign)\s*\(/i;
+
+/**
+ * Why a CSS input gets the light minify instead of csso, or "" when csso is safe. csso 5 drops a valid @import that
+ * follows an @layer statement and strips units from zero inside calc() and the other math functions.
+ */
+export function cssLightReason(input: string): string {
+  const code = input.replace(/\/\*[\s\S]*?\*\//g, "").replace(/"(?:[^"\\]|\\.)*"|'(?:[^'\\]|\\.)*'/g, '""');
+  if (/@import\b/i.test(code) || /@layer\b/i.test(code)) return "This CSS uses @import or @layer, so only comments and extra whitespace were removed (the full minifier can drop an @import that follows @layer).";
+  if (CSS_MATH.test(code)) return "This CSS uses calc() or another math function, so only comments and extra whitespace were removed (the full minifier can turn 0px into 0 there, which breaks the value).";
+  return "";
+}
+const cssNeedsLightMode = (input: string) => cssLightReason(input) !== "";
+
+/**
+ * Light CSS minify: removes comments and collapses whitespace, and drops spaces only next to { } and ;, which never
+ * changes meaning. Strings are kept as written; a comment between two tokens (.a, a comment, .b) stays as an empty
+ * comment so the tokens are not joined or split.
+ */
+export function lightCss(input: string): string {
+  let out = "";
+  for (let i = 0; i < input.length; i += 1) {
+    const char = input[i];
+    if (char === '"' || char === "'") {
+      let end = i + 1;
+      while (end < input.length && input[end] !== char && input[end] !== "\n") end += input[end] === "\\" ? 2 : 1;
+      out += input.slice(i, end + 1);
+      i = end;
+    } else if (char === "/" && input[i + 1] === "*") {
+      const end = input.indexOf("*/", i + 2);
+      const next = end === -1 ? "" : input[end + 2] ?? "";
+      const previous = out[out.length - 1] ?? "";
+      if (/[^\s{};,:>]/.test(previous) && /[^\s{};,:>]/.test(next)) out += "/**/";
+      i = end === -1 ? input.length : end + 1;
+    } else if (/\s/.test(char)) {
+      if (!/\s$/.test(out)) out += " ";
+    } else out += char;
+  }
+  return out.replace(/\s*([{};])\s*/g, "$1").replace(/;}/g, "}").trim();
+}
+
 /**
  * CSS through csso with restructuring off, so rules keep their order and selectors their meaning. csso drops some
  * valid CSS without an error (nested rules, empty blocks such as "@layer base {}", which still set layer order), so
  * a result with fewer blocks than the input is refused with an error instead of being shown.
  */
 async function minifyCss(input: string): Promise<string> {
+  if (cssNeedsLightMode(input)) return lightCss(input);
   const { minify } = await import("csso");
   let css: string;
   try {

@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { AlertIcon, CheckIcon, CopyBlocked, CopyIcon, Segmented, ToolIntro, UndoToast, useCopy, useUndo, Workbench } from "@/components/workbench";
-import { isInstant, MODES, SAMPLES, minify, minifyInstant, type Mode } from "@/lib/minifier/minify";
+import { cssLightReason, isInstant, MODES, SAMPLES, minify, minifyInstant, type Mode } from "@/lib/minifier/minify";
 
 const LABEL: Record<Mode, string> = { json: "JSON", css: "CSS", html: "HTML", js: "JavaScript" };
 const OPTIONS = MODES.map((value) => ({ value, label: value === "js" ? "JS" : LABEL[value] }));
@@ -84,6 +84,7 @@ export default function MinifierTool() {
           </div>
           <textarea id="min-output" value={output} readOnly placeholder={pending ? "Minifying…" : error ? "Fix the input to see the result" : "The minified code appears here as you type"} aria-describedby="min-output-meta" spellCheck={false} />
           <CopyBlocked show={blocked} />
+          {mode === "css" && output && cssLightReason(input) ? <p className="wb-note wb-pane-note">{cssLightReason(input)}</p> : null}
           <p id="min-output-meta" className="wb-pane-meta wb-stats">
             <span>{after.toLocaleString("en")} bytes</span>
             {output ? <span><strong>{saved}% smaller</strong></span> : null}
