@@ -46,6 +46,8 @@ export function shiftDate(base: string, amount: number, unit: DateUnit) {
   const date = new Date(`${base}T00:00:00Z`);
   if (unit === "days") date.setUTCDate(date.getUTCDate() + amount);
   else if (unit === "weeks") date.setUTCDate(date.getUTCDate() + amount * 7);
-  else date.setUTCMonth(date.getUTCMonth() + amount);
+  // Months use the same end-of-month rule as "In months": the day is clamped to the target month's last day
+  // (Jan 31 + 1 month = Feb 28, or Feb 29 in a leap year), so the two calculators on the page agree.
+  else return toInputValue(addMonthsClamped(date, amount));
   return toInputValue(date);
 }

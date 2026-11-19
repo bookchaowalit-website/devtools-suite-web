@@ -41,7 +41,7 @@ export default function SnippetsTool() {
                 <li key={snippet.id}>
                   <button type="button" aria-pressed={selected?.id === snippet.id} aria-controls="snippet-panel" onClick={() => setSelectedId(snippet.id)}>
                     <strong>{snippet.title}</strong>
-                    <span>{languageLabel(snippet.language)}</span>
+                    <span>{languageLabel(snippet.language, snippet.category)}</span>
                   </button>
                 </li>
               ))}
@@ -57,7 +57,7 @@ export default function SnippetsTool() {
         {selected ? (
           <section id="snippet-panel" className="wb-pane" aria-labelledby="snippet-title">
             <div className="wb-pane-head">
-              <h2 id="snippet-title">{selected.title} <span className="wb-muted">{languageLabel(selected.language)}</span></h2>
+              <h2 id="snippet-title">{selected.title} <span className="wb-muted">{languageLabel(selected.language, selected.category)}</span></h2>
               <button type="button" className="wb-button" onClick={() => copy(selected.code)}>
                 {copied ? <><CheckIcon />Copied</> : <><CopyIcon />Copy</>}
               </button>

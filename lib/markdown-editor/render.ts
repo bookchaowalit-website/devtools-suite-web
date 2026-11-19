@@ -22,6 +22,9 @@ export function escapeHtml(value: string) {
   return value.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
 }
 
+/** Largest table the live preview builds: 50 columns and 5,000 cells; the rest is cut with a note. */
+export const MAX_TABLE_COLUMNS = 50;
+export const MAX_TABLE_CELLS = 5000;
 const TABLE_RULE = /^\|?\s*:?-+:?\s*(\|\s*:?-+:?\s*)*\|?\s*$/;
 /** Table cells split on "|" but not on an escaped "\\|", which becomes a literal "|" in the cell. */
 const cells = (row: string) => row.trim().replace(/^\|/, "").replace(/(?<!\\)\|$/, "").split(/(?<!\\)\|/).map((cell) => cell.trim().replace(/\\\|/g, "|"));
@@ -71,15 +74,23 @@ export function renderMarkdown(source: string, { headingOffset = 0 }: { headingO
     else if (numbered) listItem(Math.floor(numbered[1].length / 2), "ol", Number(numbered[2]), numbered[3]);
     else if (line.includes("|") && TABLE_RULE.test(lines[index + 1] ?? "") && cells(line).length === cells(lines[index + 1]).length) {
       closeList();
-      const head = cells(line);
+      const fullHead = cells(line);
+      const head = fullHead.slice(0, MAX_TABLE_COLUMNS);
       const rows: string[][] = [];
+      let skipped = 0;
       index += 2;
       // A row needs a "|" and must not open another block (heading, list, quote or code fence).
       const blockStart = /^(#{1,6} |\s*[-*+] |\s*\d{1,9}[.)] |&gt; |```)/;
-      while (index < lines.length && lines[index].includes("|") && lines[index].trim() && !blockStart.test(lines[index])) rows.push(cells(lines[index++]));
+      while (index < lines.length && lines[index].includes("|") && lines[index].trim() && !blockStart.test(lines[index])) {
+        if ((rows.length + 2) * head.length <= MAX_TABLE_CELLS) rows.push(cells(lines[index])); else skipped += 1;
+        index += 1;
+      }
       index -= 1;
       const row = (values: string[], tag: "th" | "td") => `<tr>${head.map((_, column) => `<${tag}${tag === "th" ? ' scope="col"' : ""}>${inline(values[column] ?? "")}</${tag}>`).join("")}</tr>`;
       output.push(`<table><thead>${row(head, "th")}</thead><tbody>${rows.map((values) => row(values, "td")).join("")}</tbody></table>`);
+      if (skipped || fullHead.length > head.length) {
+        output.push(`<p><em>Preview shows the first ${head.length} columns and ${rows.length} rows of this table (${MAX_TABLE_CELLS.toLocaleString("en")} cells at most).</em></p>`);
+      }
     }
     else if (!line.trim()) { closeList(); output.push("<br />"); }
     else { closeList(); output.push(`<p>${inline(line)}</p>`); }

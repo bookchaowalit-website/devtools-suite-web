@@ -67,7 +67,7 @@ export default function DateCalculatorTool() {
         </section>
       </div>
 
-      <p className="wb-hint">Dates use the Asia/Bangkok calendar. “In months” counts whole calendar months, then the days left over: Jan 31 to Feb 28 is one month. Adding months keeps the day number and rolls over a short month: Jan 31 + 1 month is Mar 3 (Mar 2 in a leap year).</p>
+      <p className="wb-hint">Dates use the Asia/Bangkok calendar. “In months” counts whole calendar months, then the days left over: Jan 31 to Feb 28 is one month. Adding months uses the same rule: Jan 31 + 1 month is Feb 28 (Feb 29 in a leap year).</p>
     </Workbench>
   );
 }

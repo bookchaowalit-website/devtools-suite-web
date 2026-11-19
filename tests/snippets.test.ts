@@ -3,7 +3,7 @@ import { test } from "vitest";
 import { SNIPPETS, filterSnippets } from "@/lib/snippets/catalog";
 
 test("searches title, language, category and tags case insensitively", () => {
-  for (const [query, id] of [["JSX", "1"], ["Decorator", "2"], ["Typed Result", "3"], ["exhaustive", "12"], ["backoff", "8"]]) {
+  for (const [query, id] of [["React · JS", "1"], ["Decorator", "2"], ["Typed Result", "3"], ["exhaustive", "12"], ["backoff", "8"]]) {
     assert.deepEqual(filterSnippets(SNIPPETS, query, "All").map(snippet => snippet.id), [id]);
   }
 });
@@ -26,8 +26,11 @@ test("each category has at least five snippets and every language has a title-ca
     assert.ok(SNIPPETS.filter((snippet) => snippet.category === category).length >= 5, category);
   }
   assert.equal(new Set(SNIPPETS.map((snippet) => snippet.id)).size, SNIPPETS.length);
-  for (const snippet of SNIPPETS) assert.match(languageLabel(snippet.language), /^[A-Z]/, snippet.id);
+  for (const snippet of SNIPPETS) assert.match(languageLabel(snippet.language, snippet.category), /^[A-Z]/, snippet.id);
   assert.equal(languageLabel("jsx"), "React · JSX");
+  // The MCP API still finds the plain React hook as javascript.
+  assert.equal(SNIPPETS.find((snippet) => snippet.id === "1")?.language, "javascript");
+  assert.equal(languageLabel("javascript", "React"), "React · JS");
 });
 
 // Codex review, 2026-11-19 (post-push round): the sample code itself must be safe to reuse.

@@ -30,24 +30,51 @@ const sentence = (text: string) => { const trimmed = text.trim(); return /[.!?]$
  */
 async function minifyJs(input: string): Promise<string> {
   const { minify } = await import("terser");
+  const options = { compress: false, mangle: false, format: { comments: false } } as const;
   try {
-    const result = await minify(input, { compress: false, mangle: false, format: { comments: false } });
-    return result.code ?? "";
-  } catch (cause) {
+    return (await minify(input, options)).code ?? "";
+  } catch (scriptError) {
+    // Not a valid script: try it as a module (import/export, top-level await). If that fails too, report the
+    // script error, which is the one people expect for plain code.
+    try { return (await minify(input, { ...options, module: true })).code ?? ""; } catch { /* report the script error */ }
+    const cause = scriptError;
     const error = cause as { message?: string; line?: number; col?: number };
     throw new MinifyError(sentence(error.message ?? "This JavaScript could not be parsed"), typeof error.line === "number" ? error.line : null, typeof error.col === "number" ? error.col + 1 : null);
   }
 }
 
-/** CSS through csso with restructuring off, so rules keep their order and selectors their meaning. */
+/** Number of "{" outside strings and comments: one per rule or at-rule block. */
+export function countBlocks(css: string): number {
+  let count = 0;
+  for (let i = 0; i < css.length; i += 1) {
+    const char = css[i];
+    if (char === "/" && css[i + 1] === "*") { const end = css.indexOf("*/", i + 2); i = end === -1 ? css.length : end + 1; }
+    else if (char === '"' || char === "'") { let end = i + 1; while (end < css.length && css[end] !== char) end += css[end] === "\\" ? 2 : 1; i = end; }
+    else if (char === "\\") i += 1;
+    else if (char === "{") count += 1;
+  }
+  return count;
+}
+
+/**
+ * CSS through csso with restructuring off, so rules keep their order and selectors their meaning. csso drops some
+ * valid CSS without an error (nested rules, empty blocks such as "@layer base {}", which still set layer order), so
+ * a result with fewer blocks than the input is refused with an error instead of being shown.
+ */
 async function minifyCss(input: string): Promise<string> {
   const { minify } = await import("csso");
+  let css: string;
   try {
-    return minify(input, { restructure: false, comments: false }).css;
+    css = minify(input, { restructure: false, comments: false }).css;
   } catch (cause) {
     const error = cause as { message?: string; line?: number; column?: number };
     throw new MinifyError(sentence(error.message ?? "This CSS could not be parsed"), typeof error.line === "number" ? error.line : null, typeof error.column === "number" ? error.column : null);
   }
+  const lost = countBlocks(input) - countBlocks(css);
+  if (lost > 0) {
+    throw new MinifyError(`The CSS minifier would drop ${lost} ${lost === 1 ? "block" : "blocks"}, so nothing was minified. It does not keep nested rules (& .child { … }) or empty blocks such as @layer base {}; flatten or remove them, then try again.`);
+  }
+  return css;
 }
 
 /** True for the modes minified without a library (JSON, HTML), which can run during render and on the server. */

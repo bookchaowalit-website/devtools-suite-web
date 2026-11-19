@@ -19,9 +19,9 @@ describe("shared Workbench pieces (2026-11-19 polish)", () => {
   });
 
   it("renders the undo toast inside an always-present status region", () => {
-    const idle: UndoState = { pending: null, offer: () => {}, undo: () => {}, dismiss: () => {} };
+    const idle: UndoState = { pending: null, offer: () => {}, undo: () => {}, dismiss: () => {}, pause: () => {}, resume: () => {} };
     expect(renderToString(<UndoToast state={idle} />)).toBe('<div class="wb-toast" role="status" aria-live="polite"></div>');
-    const html = renderToString(<UndoToast state={{ ...idle, pending: { message: "Item deleted.", restore: () => {} } }} />);
+    const html = renderToString(<UndoToast state={{ ...idle, pending: { message: "Item deleted.", restore: () => {}, id: 1 } }} />);
     expect(html).toContain("<span>Item deleted.</span>");
     expect(html).toContain('class="wb-toast-undo">Undo</button>');
   });

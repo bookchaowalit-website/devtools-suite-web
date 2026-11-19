@@ -41,8 +41,10 @@ export function groupDigits(value: string, base: Base): string {
   if ((base !== "bin" && base !== "hex") || value.length <= 4) return value;
   const negative = value.startsWith("-");
   const digits = negative ? value.slice(1) : value;
-  const groups: string[] = [];
-  for (let end = digits.length; end > 0; end -= 4) groups.unshift(digits.slice(Math.max(0, end - 4), end));
+  // Left to right in one pass (no unshift, which made very long numbers quadratic): the first group takes the remainder.
+  const first = digits.length % 4 || 4;
+  const groups: string[] = [digits.slice(0, first)];
+  for (let start = first; start < digits.length; start += 4) groups.push(digits.slice(start, start + 4));
   return `${negative ? "-" : ""}${groups.join(" ")}`;
 }
 

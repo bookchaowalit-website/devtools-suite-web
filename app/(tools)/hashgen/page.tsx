@@ -39,16 +39,33 @@ export default function HashTool() {
   // Empty text is a valid input (zero bytes has a hash); only "no file chosen yet" has nothing to hash.
   const subject = source === "text" ? `text\u0000${input}` : file?.data ? `file\u0000${file.id}` : null;
   const key = subject ? `${algorithm}\u0000${subject}` : "";
+  // One hash job at a time: Web Crypto copies the whole input for each job and cannot be cancelled, so while a large
+  // file is hashing, newer requests wait and only the newest one runs next.
+  const hashing = useRef<{ busy: boolean; next: { key: string; algorithm: Algorithm; value: string | ArrayBuffer } | null }>({ busy: false, next: null });
+  const wanted = useRef("");
   useEffect(() => {
     if (!subject) return;
-    let cancelled = false;
     const value = source === "text" ? input : file?.data;
     if (value === undefined || value === null) return;
     const resultKey = `${algorithm}\u0000${subject}`;
-    digestBytes(algorithm, value)
-      .then((bytes) => { if (!cancelled) setResult({ key: resultKey, bytes }); })
-      .catch(() => { if (!cancelled) setResult({ key: resultKey, bytes: null, error: "The browser could not hash this input." }); });
-    return () => { cancelled = true; };
+    wanted.current = resultKey;
+    const queue = hashing.current;
+    queue.next = { key: resultKey, algorithm, value };
+    if (queue.busy) return;
+    void (async () => {
+      queue.busy = true;
+      while (queue.next) {
+        const job = queue.next;
+        queue.next = null;
+        try {
+          const bytes = await digestBytes(job.algorithm, job.value);
+          if (wanted.current === job.key) setResult({ key: job.key, bytes });
+        } catch {
+          if (wanted.current === job.key) setResult({ key: job.key, bytes: null, error: "The browser could not hash this input." });
+        }
+      }
+      queue.busy = false;
+    })();
   }, [algorithm, subject, source, input, file]);
   // Only a result for exactly this input (and this file selection) is ever shown, compared or copied.
   const bytes = key && result?.key === key ? result.bytes : null;
@@ -89,6 +106,7 @@ export default function HashTool() {
     setAnnouncement(`Hashing ${picked.name}.`);
     if (reading.current) waiting.current = { id, file: picked }; else void read(id, picked);
   };
+  const clearText = () => { const before = input; setInput(""); undo.offer("Text cleared.", () => setInput(before)); };
   // Clear offers Undo, which brings the file back only if no other file was chosen since.
   const clearFile = () => {
     const cleared = file;
@@ -127,9 +145,9 @@ export default function HashTool() {
           <section className="wb-pane">
             <div className="wb-pane-head">
               <label htmlFor="hash-input">Text</label>
-              <button type="button" className="wb-button-plain" onClick={() => setInput("")} disabled={!input}>Clear</button>
+              <button type="button" className="wb-button-plain" onClick={clearText} disabled={!input}>Clear</button>
             </div>
-            <textarea id="hash-input" value={input} onChange={(event) => setInput(event.target.value)} placeholder="Type or paste text" aria-describedby="hash-input-meta" spellCheck={false} autoComplete="off" />
+            <textarea id="hash-input" value={input} onChange={(event) => { setInput(event.target.value); undo.dismiss(); }} placeholder="Type or paste text" aria-describedby="hash-input-meta" spellCheck={false} autoComplete="off" />
             <p id="hash-input-meta" className="wb-pane-meta">{textBytes} {textBytes === 1 ? "byte" : "bytes"} (UTF-8)</p>
           </section>
         ) : (

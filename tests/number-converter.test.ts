@@ -60,3 +60,12 @@ test("binary and hex read in nibbles; separators and prefixes are accepted back"
   expect(copyValue("12", "dec", true)).toBe("12");
   expect(copyValue("ff", "hex", false)).toBe("ff");
 });
+
+test("grouping a very long number stays linear and keeps every digit", () => {
+  const digits = "1".repeat(400_001);
+  const started = performance.now();
+  const grouped = groupDigits(digits, "bin");
+  expect(performance.now() - started < 500).toBe(true);
+  expect(grouped.replace(/ /g, "")).toBe(digits);
+  expect(grouped.startsWith("1 1111")).toBe(true);
+});

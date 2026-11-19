@@ -55,3 +55,14 @@ test("an escaped pipe stays inside its table cell", () => {
 test("a table needs as many separator cells as header cells", () => {
   assert.equal(renderMarkdown("| A | B |\n| - |\n| 1 | 2 |").includes("<table>"), false);
 });
+
+test("a huge table is cut at the cell cap with a note", async () => {
+  const { MAX_TABLE_CELLS, MAX_TABLE_COLUMNS } = await import("@/lib/markdown-editor/render");
+  const head = `|${" h |".repeat(1000)}`;
+  const rule = `|${" - |".repeat(1000)}`;
+  const body = Array.from({ length: 1000 }, () => "| a | b |").join("\n");
+  const html = renderMarkdown(`${head}\n${rule}\n${body}`);
+  assert.ok((html.match(/<t[hd]/g) ?? []).length <= MAX_TABLE_CELLS + MAX_TABLE_COLUMNS);
+  assert.ok(html.length < 400_000, String(html.length));
+  assert.match(html, /Preview shows the first 50 columns/);
+});

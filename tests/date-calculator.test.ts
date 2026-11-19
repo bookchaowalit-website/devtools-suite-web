@@ -13,10 +13,13 @@ test("shifts days and weeks across month and year boundaries", () => {
   assert.equal(shiftDate("2024-12-28", 1, "weeks"), "2025-01-04");
   assert.equal(shiftDate("2025-01-04", -1, "weeks"), "2024-12-28");
 });
-test("month shifts preserve the existing browser calendar overflow semantics", () => {
-  assert.equal(shiftDate("2024-01-31", 1, "months"), "2024-03-02");
-  assert.equal(shiftDate("2023-01-31", 1, "months"), "2023-03-03");
-  assert.equal(shiftDate("2024-03-31", -1, "months"), "2024-03-02");
+test("month shifts clamp to the end of a short month, the same rule the span count uses", () => {
+  assert.equal(shiftDate("2024-01-31", 1, "months"), "2024-02-29");
+  assert.equal(shiftDate("2023-01-31", 1, "months"), "2023-02-28");
+  assert.equal(shiftDate("2024-03-31", -1, "months"), "2024-02-29");
+  assert.equal(shiftDate("2026-01-15", 13, "months"), "2027-02-15");
+  // Adding a month and counting the span back agree.
+  assert.equal(dateDifference("2026-01-31", shiftDate("2026-01-31", 1, "months")).months, "1 month 0 days");
 });
 test("Bangkok calendar formatting uses its midnight boundary and UTC shift", () => {
   assert.equal(toInputValue(new Date("2026-10-14T16:59:59Z")), "2026-10-14");

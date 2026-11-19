@@ -101,34 +101,53 @@ export function CopyBlocked({ show, what = "the result" }: { show: boolean; what
   return <p className="wb-note wb-note-alert" aria-hidden="true"><AlertIcon />Copy was blocked by the browser. Select {what} and copy it by hand.</p>;
 }
 
-export type UndoState = { pending: { message: string; restore: () => void } | null; offer: (message: string, restore: () => void) => void; undo: () => void; dismiss: () => void };
+export type UndoState = {
+  pending: { message: string; restore: () => void; id: number } | null;
+  offer: (message: string, restore: () => void) => void;
+  undo: () => void;
+  dismiss: () => void;
+  /** Stop the countdown while the toast has focus or the pointer; resume starts a fresh countdown. */
+  pause: () => void;
+  resume: () => void;
+};
 
 /**
  * Undo for destructive actions (delete, clear, reset): call `offer("Cleared.", restore)` after the change and
- * render <UndoToast state={…} /> once per page. The offer stays for `ms` milliseconds.
+ * render <UndoToast state={…} /> once per page. The offer stays for `ms` milliseconds, paused while it has focus.
  */
 export function useUndo(ms = 6000): UndoState {
   const [pending, setPending] = useState<UndoState["pending"]>(null);
   const timer = useRef<number | undefined>(undefined);
+  const counter = useRef(0);
   useEffect(() => () => window.clearTimeout(timer.current), []);
+  const start = () => { window.clearTimeout(timer.current); timer.current = window.setTimeout(() => setPending(null), ms); };
   const dismiss = () => { window.clearTimeout(timer.current); setPending(null); };
-  const offer = (message: string, restore: () => void) => {
-    window.clearTimeout(timer.current);
-    setPending({ message, restore });
-    timer.current = window.setTimeout(() => setPending(null), ms);
-  };
+  const offer = (message: string, restore: () => void) => { counter.current += 1; setPending({ message, restore, id: counter.current }); start(); };
   const undo = () => { pending?.restore(); dismiss(); };
-  return { pending, offer, undo, dismiss };
+  const pause = () => window.clearTimeout(timer.current);
+  const resume = () => { if (pending) start(); };
+  return { pending, offer, undo, dismiss, pause, resume };
 }
 
-/** A small toast with an Undo button. The status container is always rendered so screen readers hear each offer. */
+/**
+ * A small toast with an Undo button. The status container is always rendered so screen readers hear each offer.
+ * When the control that triggered it is gone (a deleted item's button), focus moves to Undo, so keyboard users can
+ * reach it at once; the countdown pauses while the toast has focus or the pointer.
+ */
 export function UndoToast({ state }: { state: UndoState }) {
+  const button = useRef<HTMLButtonElement>(null);
+  const id = state.pending?.id;
+  useEffect(() => {
+    if (id === undefined) return;
+    const active = document.activeElement;
+    if (!active || active === document.body || !active.isConnected) button.current?.focus();
+  }, [id]);
   return (
     <div className="wb-toast" role="status" aria-live="polite">
       {state.pending ? (
-        <div className="wb-toast-body">
+        <div className="wb-toast-body" onFocus={state.pause} onBlur={state.resume} onMouseEnter={state.pause} onMouseLeave={state.resume}>
           <span>{state.pending.message}</span>
-          <button type="button" className="wb-toast-undo" onClick={state.undo}>Undo</button>
+          <button ref={button} type="button" className="wb-toast-undo" onClick={state.undo}>Undo</button>
           <button type="button" className="wb-toast-close" onClick={state.dismiss} aria-label="Dismiss">×</button>
         </div>
       ) : null}

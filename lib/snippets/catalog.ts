@@ -1,6 +1,6 @@
 export type Snippet = { id: string; title: string; code: string; language: string; category: string; tags: string[] };
 export const SNIPPETS: Snippet[] = [
-  { id: "1", title: "React Hook", code: "const useHook = () => {\n  return { ready: true };\n};", language: "jsx", category: "React", tags: ["react", "hook"] },
+  { id: "1", title: "React Hook", code: "const useHook = () => {\n  return { ready: true };\n};", language: "javascript", category: "React", tags: ["react", "hook"] },
   { id: "4", title: "useDebounce", code: "import { useEffect, useState } from \"react\";\n\nexport function useDebounce<T>(value: T, ms = 300): T {\n  // Updater functions, so a function value is stored as it is, not called as an initializer or updater.\n  const [debounced, setDebounced] = useState<T>(() => value);\n  useEffect(() => {\n    const timer = setTimeout(() => setDebounced(() => value), ms);\n    return () => clearTimeout(timer);\n  }, [value, ms]);\n  return debounced;\n}", language: "tsx", category: "React", tags: ["react", "hook", "debounce", "search"] },
   { id: "5", title: "useLocalStorage", code: "import { useEffect, useState } from \"react\";\n\n/** State saved under `key`. It starts from `initial` (as the server renders it) and loads the saved value after\n *  hydration; the value is stored with its key, so a new key never receives the old key's value. */\nexport function useLocalStorage<T>(key: string, initial: T) {\n  const [state, setState] = useState<{ key: string; value: T; loaded: boolean }>({ key, value: initial, loaded: false });\n  useEffect(() => {\n    let value = initial;\n    try {\n      const saved = localStorage.getItem(key);\n      if (saved !== null) value = JSON.parse(saved) as T;\n    } catch { /* blocked or invalid: keep initial */ }\n    setState({ key, value, loaded: true });\n    // eslint-disable-next-line react-hooks/exhaustive-deps -- initial is only the fallback\n  }, [key]);\n  useEffect(() => {\n    if (!state.loaded || state.key !== key) return;\n    try { localStorage.setItem(key, JSON.stringify(state.value)); } catch { /* storage full or blocked */ }\n  }, [key, state]);\n  const setValue = (value: T) => setState({ key, value, loaded: true });\n  return [state.key === key ? state.value : initial, setValue] as const;\n}", language: "tsx", category: "React", tags: ["react", "hook", "storage", "state"] },
   { id: "6", title: "usePrevious", code: "import { useEffect, useRef } from \"react\";\n\nexport function usePrevious<T>(value: T): T | undefined {\n  const ref = useRef<T | undefined>(undefined);\n  useEffect(() => {\n    ref.current = value;\n  }, [value]);\n  return ref.current;\n}", language: "tsx", category: "React", tags: ["react", "hook", "ref"] },
@@ -19,11 +19,12 @@ export const SNIPPETS: Snippet[] = [
 
 /** How a language is shown: the words the category chips use, not the raw lowercase id. */
 export const LANGUAGE_LABELS: Record<string, string> = { jsx: "React · JSX", tsx: "React · TSX", python: "Python", typescript: "TypeScript", javascript: "JavaScript" };
-export const languageLabel = (language: string) => LANGUAGE_LABELS[language] ?? language;
+/** The label shown on the page. The MCP API keeps the raw language ("javascript" for the plain React hook). */
+export const languageLabel = (language: string, category?: string) => (category === "React" && language === "javascript" ? "React · JS" : LANGUAGE_LABELS[language] ?? language);
 
 export function filterSnippets(snippets: Snippet[], query: string, category: string): Snippet[] {
   return snippets.filter(snippet => {
-    const text = `${snippet.title} ${snippet.language} ${languageLabel(snippet.language)} ${snippet.category} ${snippet.tags.join(" ")}`.toLowerCase();
+    const text = `${snippet.title} ${snippet.language} ${languageLabel(snippet.language, snippet.category)} ${snippet.category} ${snippet.tags.join(" ")}`.toLowerCase();
     return (category === "All" || snippet.category === category) && text.includes(query.toLowerCase());
   });
 }

@@ -512,3 +512,8 @@
   .wb-library-list li { flex: none; scroll-snap-align: start; }
   .wb-library-list button { width: auto; min-width: 140px; }
 }
+.wb-noeol { color: var(--wb-muted); font-family: var(--wb-font); font-size: 13px; }
+.wb-diff-fallback { padding: 0 16px 12px; border-bottom: 1px solid var(--wb-line); }
+.wb-diff-fallback .wb-note-alert { padding: 10px 0 8px; }
+.wb-unified { width: 100%; padding: 12px; border: 1px solid var(--wb-field-line); border-radius: var(--wb-radius-sm); background: var(--wb-bg); font-family: var(--wb-mono); font-size: 14px; line-height: 1.5; white-space: pre; overflow: auto; resize: vertical; }
+.wb-unified:focus-visible { outline: 3px solid var(--wb-focus); outline-offset: 0; }

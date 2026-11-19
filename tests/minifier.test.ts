@@ -46,3 +46,16 @@ test("CSS keeps selector meaning and escaped characters", async () => {
   assert.equal(await minify("css", ".a .b > .c { content: \", \"; }"), '.a .b>.c{content:", "}');
   assert.equal(await minify("css", ".a\\> .b { color: red }"), ".a\\> .b{color:red}");
 });
+
+// Codex review, 2026-11-19 (last round).
+test("CSS that csso would cut is refused with an error, never returned short", async () => {
+  for (const css of [".card { color: red; & .title { color: blue; } }", "body { color: red; & > a { color: green } }", "@layer base {}\n.a { color: red }"]) {
+    await assert.rejects(() => minify("css", css), (error: unknown) => error instanceof MinifyError && /would drop \d+ block/.test(error.message), css);
+  }
+  assert.equal(await minify("css", "@media (min-width: 1px) { .a { color: red } }"), "@media (min-width:1px){.a{color:red}}");
+});
+
+test("JavaScript modules with import, export and top-level await minify", async () => {
+  assert.equal(await minify("js", "export const response = await fetch('/api');"), 'export const response=await fetch("/api");');
+  assert.equal(await minify("js", "import { a } from './a.js';\nexport default a;"), 'import{a}from"./a.js";export default a;');
+});

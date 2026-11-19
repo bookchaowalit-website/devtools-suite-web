@@ -11,8 +11,8 @@ function ChangedLine({ op, parts }: { op: Op; parts?: WordPart[] }) {
 }
 
 export default function DiffCheckerTool() {
-  const [left, setLeft] = useState("Hello World\nThis is the first text.\nShared line");
-  const [right, setRight] = useState("Hello World\nThis is the second text.\nShared line\nExtra");
+  const [left, setLeft] = useState("Hello World\nThis is the first text.\nShared line\n");
+  const [right, setRight] = useState("Hello World\nThis is the second text.\nShared line\nExtra\n");
   const [announcement, setAnnouncement] = useState("");
   const [fileName, setFileName] = useState("file.txt");
   const undo = useUndo();
@@ -80,7 +80,13 @@ export default function DiffCheckerTool() {
             </button>
           </div>
         </div>
-        <CopyBlocked show={blocked} what="the differences" />
+        {blocked ? (
+          <div className="wb-diff-fallback">
+            <CopyBlocked show what="the patch below (it has the file and hunk headers git apply needs)" />
+            <label className="wb-sr" htmlFor="diff-unified">Unified diff to copy by hand</label>
+            <textarea id="diff-unified" className="wb-unified" value={unified} readOnly rows={Math.min(12, unified.split("\n").length)} spellCheck={false} onFocus={(event) => event.currentTarget.select()} />
+          </div>
+        ) : null}
         {approximate ? <p className="wb-note wb-note-alert wb-diff-empty"><AlertIcon />These texts are too long to compare line by line here, so the changed middle part is shown as removed, then added.</p> : null}
         {ops.length === 0 ? (
           <p className="wb-note wb-diff-empty">Paste text into both boxes to compare them.</p>
@@ -96,6 +102,7 @@ export default function DiffCheckerTool() {
                 <code>
                   {op.type !== "equal" ? <span className="wb-sr">{op.type === "add" ? "Added: " : "Removed: "}</span> : null}
                   {op.type === "equal" ? op.line || " " : <ChangedLine op={op} parts={words.get(index)} />}
+                  {op.noEol ? <span className="wb-noeol"> (no newline at end)</span> : null}
                 </code>
               </div>
             ))}

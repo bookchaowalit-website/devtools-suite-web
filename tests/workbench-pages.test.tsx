@@ -171,7 +171,8 @@ describe("the last five tools on the Workbench shell", () => {
     expect(html).toContain("React Hook");
     expect(html).toContain('aria-pressed="true" aria-controls="snippet-panel"');
     expect(html).not.toContain("<nav");
-    expect(html).toContain("React · JSX");
+    expect(html).toContain("React · JS<");
+    expect(html).toContain("React · TSX");
     expect(html).toMatch(/>15<!-- --> snippets<\/p>|>15 snippets<\/p>/);
     const css = readFileSync(new URL("../app/workbench.css", import.meta.url), "utf8");
     expect(css).toContain('.wb-library-list button[aria-pressed="true"] { background: var(--wb-button);');

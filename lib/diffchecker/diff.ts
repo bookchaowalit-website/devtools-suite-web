@@ -1,6 +1,20 @@
-export type Op = { type: "equal" | "add" | "del"; line: string; left: number | null; right: number | null };
-/** Splits into lines; an empty text has no lines (not one empty line). */
-export const toLines = (text: string): string[] => (text === "" ? [] : text.split("\n"));
+/** `noEol`: this is the last line of its text and that text does not end with a newline. */
+export type Op = { type: "equal" | "add" | "del"; line: string; left: number | null; right: number | null; noEol?: true };
+
+/** Marks the last line of a text that does not end with a newline, so it never matches the same line with one. */
+const NO_EOL_MARK = "\u0000no-eol";
+
+/**
+ * Lines as git counts them, for the page and the patch alike: "" has none, "\n" is one empty line, a final newline
+ * ends the last line instead of starting another, and a missing final newline is marked on the last line.
+ */
+export function toLines(text: string): string[] {
+  if (text === "") return [];
+  const eol = text.endsWith("\n");
+  const lines = (eol ? text.slice(0, -1) : text).split("\n");
+  if (!eol) lines[lines.length - 1] += NO_EOL_MARK;
+  return lines;
+}
 
 /**
  * Largest LCS table built per comparison (changed-middle lines left × right). 4 million cells is about 16 MB as a
@@ -17,7 +31,9 @@ export function lineDiff(left: string, right: string): Op[] {
 
 /** Line diff: common lines at the start and end are matched first, then an LCS over the changed middle only. */
 export function diffLines(left: string, right: string): DiffResult {
-  return diffArrays(toLines(left), toLines(right));
+  const result = diffArrays(toLines(left), toLines(right));
+  for (const op of result.ops) if (op.line.endsWith(NO_EOL_MARK)) { op.line = op.line.slice(0, -NO_EOL_MARK.length); op.noEol = true; }
+  return result;
 }
 
 /** The line diff of two line arrays (shared by the page view and the patch export). */
@@ -88,40 +104,28 @@ export function pairChanges(ops: Op[]): Map<number, number> {
   return pairs;
 }
 
-/** Marks the last line of a text that does not end with a newline, so it never matches the same line with one. */
-const NO_EOL_MARK = "\u0000no-eol";
-
-/** Lines of a text for a patch: "" has none, "\n" is one empty line, and a missing final newline is marked on the last line. */
-function patchLines(text: string): string[] {
-  if (text === "") return [];
-  const eol = text.endsWith("\n");
-  const lines = (eol ? text.slice(0, -1) : text).split("\n");
-  if (!eol) lines[lines.length - 1] += NO_EOL_MARK;
-  return lines;
-}
-
 /**
- * Two texts as one unified-diff hunk that `git apply` and `patch` accept: every line ends with a newline, an empty
- * line is a line (not an empty file), and a line without a final newline only matches the same line without one, so it
- * shows as changed and gets "\ No newline at end of file" after it.
+ * A relative file path for a patch header. Spaces are kept (the header then ends with a tab, as git writes it);
+ * control characters, a leading "/", "." and ".." segments are removed. Default file.txt.
  */
-/** A file path safe for a patch header: no spaces or control characters, no leading slash or "..", default file.txt. */
 export function patchPath(name: string): string {
-  const clean = name.trim().replace(/\\/g, "/").replace(/[\s\u0000-\u001f]+/g, "-").split("/").filter((part) => part && part !== "." && part !== "..").join("/");
+  const clean = name.trim().replace(/\\/g, "/").replace(/[\u0000-\u001f\u007f]+/g, "").split("/").map((part) => part.trim()).filter((part) => part && part !== "." && part !== "..").join("/");
   return clean || "file.txt";
 }
 
 /** `file` is the path both sides share, written as a/<file> and b/<file> as git does (so `git apply` finds it). */
 export function unifiedDiff(left: string, right: string, { file = "file.txt" }: { file?: string } = {}): string {
-  const from = `a/${patchPath(file)}`; const to = `b/${patchPath(file)}`;
-  const { ops } = diffArrays(patchLines(left), patchLines(right));
+  const path = patchPath(file);
+  // git ends a header path that contains a space with a tab, so the name is read whole.
+  const end = path.includes(" ") ? "\t" : "";
+  const from = `a/${path}${end}`; const to = `b/${path}${end}`;
+  const { ops } = diffLines(left, right);
   const leftCount = ops.filter((op) => op.type !== "add").length;
   const rightCount = ops.filter((op) => op.type !== "del").length;
   let body = "";
   for (const op of ops) {
-    const noEol = op.line.endsWith(NO_EOL_MARK);
-    body += `${op.type === "add" ? "+" : op.type === "del" ? "-" : " "}${noEol ? op.line.slice(0, -NO_EOL_MARK.length) : op.line}\n`;
-    if (noEol) body += "\\ No newline at end of file\n";
+    body += `${op.type === "add" ? "+" : op.type === "del" ? "-" : " "}${op.line}\n`;
+    if (op.noEol) body += "\\ No newline at end of file\n";
   }
   const range = (count: number) => `${count ? 1 : 0},${count}`;
   return `--- ${from}\n+++ ${to}\n@@ -${range(leftCount)} +${range(rightCount)} @@\n${body}`;

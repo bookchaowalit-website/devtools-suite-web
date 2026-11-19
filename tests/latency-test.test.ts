@@ -62,3 +62,8 @@ it("one short announcement per run instead of all four figures", () => {
   expect(runAnnouncement({ ms: 182, ok: true, at: 2, target: "a", opaque: true }, two)).toBe("182 ms, response not readable. Average 204 ms.");
   expect(runAnnouncement({ ms: 10_000, ok: false, at: 3, target: "a" }, two)).toBe("Failed after 10000 ms. Average 204 ms.");
 });
+
+it("keeps zero-width characters inside the URL and trims them only at the ends", () => {
+  const target = normalizeTarget("​/search?q=👩‍💻﻿", "https://devtools.example");
+  expect("url" in target && decodeURIComponent(target.url)).toBe("https://devtools.example/search?q=👩‍💻");
+});
